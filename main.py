@@ -5,8 +5,10 @@ import vertexai
 from vertexai.generative_models import (
     GenerativeModel,
     Content,
-    Part
-), Tool, FunctionDeclaration
+    Part,
+    Tool,
+    FunctionDeclaration
+)
 import os
 from dotenv import load_dotenv
 from agent_tools import (
@@ -154,7 +156,7 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 async def chat_with_notebot(request: ChatRequest):
     """Main endpoint — student sends a message, agent responds"""
-    
+
     model = GenerativeModel(
         "gemini-1.5-pro",
         tools=[notebot_tools],
@@ -169,48 +171,48 @@ async def chat_with_notebot(request: ChatRequest):
             "Use this context when searching for notes if the student doesn't specify."
         )
     )
-    
+
     # Build conversation history for Vertex AI
-history = []
+    history = []
 
-for msg in request.chat_history[-10:]:
+    for msg in request.chat_history[-10:]:
 
-    role = msg.get("role", "user")
+        role = msg.get("role", "user")
 
-    if role == "assistant":
-        role = "model"
+        if role == "assistant":
+            role = "model"
 
-    history.append(
-        Content(
-            role=role,
-            parts=[
-                Part.from_text(
-                    msg.get("content", "")
-                )
-            ]
+        history.append(
+            Content(
+                role=role,
+                parts=[
+                    Part.from_text(
+                        msg.get("content", "")
+                    )
+                ]
+            )
         )
-    )
 
-chat = model.start_chat(history=history)
-    
+    chat = model.start_chat(history=history)
+
     # Agentic loop — agent can call multiple tools in sequence
     response = chat.send_message(request.message)
-    
+
     max_iterations = 5  # Prevent infinite loops
     iteration = 0
-    
+
     while iteration < max_iterations:
         iteration += 1
-        
+
         # Check if the agent wants to call a tool
         if response.candidates[0].content.parts[0].function_call:
             func_call = response.candidates[0].content.parts[0].function_call
             tool_name = func_call.name
             tool_args = dict(func_call.args)
-            
+
             # Execute the tool (this queries MongoDB)
             tool_result = handle_tool_call(tool_name, tool_args)
-            
+
             # Send tool result back to agent
             response = chat.send_message(
                 vertexai.generative_models.Part.from_function_response(
@@ -221,7 +223,7 @@ chat = model.start_chat(history=history)
         else:
             # Agent gave a final text response — we're done
             break
-    
+
     return {
         "response": response.text,
         "success": True
@@ -241,11 +243,11 @@ async def upload_note(
     uploaded_by: str = "anonymous"
 ):
     """Upload a new note — generates embedding and stores in MongoDB"""
-    
+
     # Generate embedding for semantic search
     text_to_embed = f"{title} {subject} {chapter} {content[:2000]}"
     embedding = get_embedding(text_to_embed)
-    
+
     note_data = {
         "title": title,
         "subject": subject,
@@ -259,9 +261,9 @@ async def upload_note(
         "embedding": embedding,
         "uploaded_by": uploaded_by
     }
-    
+
     note_id = insert_note(note_data)
-    
+
     return {"note_id": note_id, "message": "Note uploaded successfully!"}
 
 
