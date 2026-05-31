@@ -252,9 +252,7 @@ async def upload_note(
         "title": title,
         "subject": subject,
         "college": college,
-        "semester": semeste
-
-
+        "semester": semester,
         "department": department,
         "chapter": chapter,
         "teacher": teacher,
