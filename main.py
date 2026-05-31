@@ -2,7 +2,11 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import vertexai
-from vertexai.generative_models import GenerativeModel, Tool, FunctionDeclaration
+from vertexai.generative_models import (
+    GenerativeModel,
+    Content,
+    Part
+), Tool, FunctionDeclaration
 import os
 from dotenv import load_dotenv
 from agent_tools import (
@@ -166,12 +170,28 @@ async def chat_with_notebot(request: ChatRequest):
         )
     )
     
-    # Build conversation history
-    history = []
-    for msg in request.chat_history[-10:]:  # Last 10 messages for context
-        history.append({"role": msg["role"], "parts": [msg["content"]]})
-    
-    chat = model.start_chat(history=history)
+    # Build conversation history for Vertex AI
+history = []
+
+for msg in request.chat_history[-10:]:
+
+    role = msg.get("role", "user")
+
+    if role == "assistant":
+        role = "model"
+
+    history.append(
+        Content(
+            role=role,
+            parts=[
+                Part.from_text(
+                    msg.get("content", "")
+                )
+            ]
+        )
+    )
+
+chat = model.start_chat(history=history)
     
     # Agentic loop — agent can call multiple tools in sequence
     response = chat.send_message(request.message)
