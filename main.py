@@ -158,7 +158,7 @@ async def chat_with_notebot(request: ChatRequest):
     """Main endpoint — student sends a message, agent responds"""
 
     model = GenerativeModel(
-        "gemini-1.5-pro",
+        "gemini-2.0-flash",
         tools=[notebot_tools],
         system_instruction=(
             "You are NoteBot, an intelligent AI study assistant on Notely — "
