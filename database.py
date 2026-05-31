@@ -51,7 +51,6 @@ def vector_search_notes(query_embedding: list, filters: dict = {}, limit: int = 
         },
         {
             "$project": {
-                "embedding": 0,  # Don't return the embedding vector
                 "score": {"$meta": "vectorSearchScore"},
                 "title": 1,
                 "subject": 1,
