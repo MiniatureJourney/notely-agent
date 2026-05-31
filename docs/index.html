@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notely — Study Smarter, Together</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --ink: #0d0d0f;
+    --ink-2: #3a3a45;
+    --ink-3: #7a7a8c;
+    --ink-4: #b0b0c0;
+    --surface: #ffffff;
+    --surface-2: #f5f4f1;
+    --surface-3: #eeede9;
+    --border: #e0dfd9;
+    --border-2: #cccbc4;
+    --accent: #5046e5;
+    --accent-light: #ebe9ff;
+    --accent-mid: #7c73f0;
+    --gold: #d4a843;
+    --gold-light: #fdf4e0;
+    --green: #1a7f5a;
+    --green-light: #e3f5ee;
+    --red: #c94040;
+    --red-light: #fdeaea;
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 16px;
+    --r-xl: 24px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--surface-2);
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 240px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    transition: transform var(--transition);
+  }
+
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-mark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo-text {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.5px;
+  }
+
+  .logo-tagline {
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+    padding-left: 42px;
+  }
+
+  .sidebar-section {
+    padding: 16px 12px 8px;
+  }
+
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-4);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0 8px;
+    margin-bottom: 6px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    font-size: 13.5px;
+    color: var(--ink-2);
+    font-weight: 400;
+    transition: all var(--transition);
+    position: relative;
+    user-select: none;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .nav-item:hover { background: var(--surface-2); color: var(--ink); }
+
+  .nav-item.active {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .nav-icon {
+    width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--accent);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .user-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: background var(--transition);
+  }
+
+  .user-card:hover { background: var(--surface-2); }
+
+  .user-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-mid) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .user-name { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .user-meta { font-size: 11px; color: var(--ink-3); }
+
+  /* ── Main Layout ── */
+  .main {
+    margin-left: 240px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.3px;
+  }
+
+  .topbar-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 36px;
+    flex: 1;
+    max-width: 400px;
+    margin-left: 16px;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+
+  .topbar-search:focus-within {
+    border-color: var(--accent-mid);
+    box-shadow: 0 0 0 3px rgba(80,70,229,0.08);
+  }
+
+  .topbar-search input {
+    border: none;
+    background: none;
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    color: var(--ink);
+    outline: none;
+    width: 100%;
+  }
+
+  .topbar-search input::placeholder { color: var(--ink-4); }
+
+  .topbar-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-icon {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition);
+    color: var(--ink-3);
+    font-size: 16px;
+  }
+
+  .btn-icon:hover { background: var(--surface-2); color: var(--ink); border-color: var(--border-2); }
+
+  .btn-primary {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--r-sm);
+    padding: 0 14px;
+    height: 36px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+
+  .btn-primary:hover { background: #3d33d4; box-shadow: 0 2px 8px rgba(80,70,229,0.3); }
+
+  /* ── Page Content ── */
+  .page { display: none; padding: 28px; flex: 1; }
+  .page.active { display: block; }
+
+  /* ── Section Header ── */
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.5px;
+  }
+
+  .section-subtitle {
+    font-size: 13.5px;
+    color: var(--ink-3);
+    margin-top: 3px;
+  }
+
+  /* ── Stats Row ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 18px 20px;
+    transition: box-shadow var(--transition);
+  }
+
+  .stat-card:hover { box-shadow: var(--shadow-sm); }
+
+  .stat-label {
+    font-size: 11.5px;
+    color: var(--ink-3);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .stat-delta {
+    font-size: 11.5px;
+    color: var(--green);
+    font-weight: 500;
+    margin-top: 6px;
+  }
+
+  /* ── Filter Bar ── */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .filter-select {
+    height: 34px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--ink-2);
+    padding: 0 10px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color var(--transition);
+  }
+
+  .filter-select:focus { border-color: var(--accent-mid); }
+
+  .filter-chip {
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--surface);
+    font-size: 12.5px;
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .filter-chip:hover { border-color: var(--accent-mid); color: var(--accent); }
+  .filter-chip.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+
+  /* ── Notes Grid ── */
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .note-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 20px;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .note-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform var(--transition);
+    transform-origin: left;
+  }
+
+  .note-card:hover { box-shadow: var(--shadow-md); border-color: var(--border-2); transform: translateY(-1px); }
+  .note-card:hover::before { transform: scaleX(1); }
+
+  .note-subject-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+    width: fit-content;
+  }
+
+  .note-title {
+    font-family: var(--font-display);
+    font-size: 15.5px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.2px;
+    line-height: 1.35;
+  }
+
+  .note-preview {
+    font-size: 13px;
+    color: var(--ink-3);
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .note-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--ink-4);
+    flex-wrap: wrap;
+  }
+
+  .note-meta-item { display: flex; align-items: center; gap: 4px; }
+
+  .note-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 2px;
+  }
+
+  .note-upvotes {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12.5px;
+    color: var(--ink-3);
+    font-weight: 500;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    transition: all var(--transition);
+  }
+
+  .note-upvotes:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-light); }
+
+  .quality-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+
+  .quality-high { background: var(--green-light); color: var(--green); }
+  .quality-mid { background: var(--gold-light); color: #8a6820; }
+
+  .btn-study {
+    height: 30px;
+    padding: 0 12px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+    font-family: var(--font-body);
+  }
+
+  .btn-study:hover { background: #3d33d4; }
+
+  /* ── NoteBot Chat (AI Page) ── */
+  .chat-layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    height: calc(100vh - 56px - 56px);
+  }
+
+  .chat-main {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .notebot-avatar {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .notebot-status {
+    width: 8px; height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    border: 2px solid var(--surface);
+    position: absolute;
+    bottom: -1px; right: -1px;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+  .msg { display: flex; gap: 10px; animation: msgIn 0.2s ease-out; }
+  .msg.user { flex-direction: row-reverse; }
+
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-avatar {
+    width: 30px; height: 30px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  .msg-avatar.bot { background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%); }
+  .msg-avatar.user { background: var(--surface-3); font-size: 13px; font-weight: 600; color: var(--ink-2); }
+
+  .msg-bubble {
+    max-width: 75%;
+    padding: 11px 15px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+
+  .msg.bot .msg-bubble {
+    background: var(--surface-2);
+    color: var(--ink);
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg.user .msg-bubble {
+    background: var(--accent);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg-bubble strong { font-weight: 600; }
+
+  .msg-bubble .note-result {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 12px 14px;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .msg-bubble .note-result:hover { border-color: var(--accent-mid); background: var(--accent-light); }
+
+  .msg-bubble .note-result-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .msg-bubble .note-result-meta {
+    font-size: 11.5px;
+    color: var(--ink-3);
+  }
+
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 12px 16px;
+  }
+
+  .typing-dot {
+    width: 6px; height: 6px;
+    background: var(--ink-4);
+    border-radius: 50%;
+    animation: typingBounce 1.2s ease-in-out infinite;
+  }
+
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+  }
+
+  .chat-input-area {
+    padding: 16px 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .quick-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .quick-chip {
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--surface);
+    font-size: 11.5px;
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+    font-family: var(--font-body);
+  }
+
+  .quick-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .chat-textarea {
+    flex: 1;
+    min-height: 42px;
+    max-height: 120px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-2);
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    color: var(--ink);
+    outline: none;
+    resize: none;
+    transition: all var(--transition);
+    line-height: 1.5;
+  }
+
+  .chat-textarea:focus { border-color: var(--accent-mid); background: var(--surface); box-shadow: 0 0 0 3px rgba(80,70,229,0.08); }
+  .chat-textarea::placeholder { color: var(--ink-4); }
+
+  .send-btn {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all var(--transition);
+    flex-shrink: 0;
+  }
+
+  .send-btn:hover { background: #3d33d4; box-shadow: 0 2px 8px rgba(80,70,229,0.35); }
+  .send-btn:disabled { background: var(--border-2); cursor: not-allowed; box-shadow: none; }
+
+  .send-btn svg { color: white; }
+
+  /* Chat sidebar */
+  .chat-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .sidebar-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    padding: 18px;
+  }
+
+  .sidebar-panel-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.1px;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 7px;
+  }
+
+  .context-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .context-label { font-size: 11px; color: var(--ink-3); font-weight: 500; margin-bottom: 2px; }
+
+  .context-select {
+    width: 100%;
+    height: 34px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    color: var(--ink-2);
+    padding: 0 10px;
+    outline: none;
+  }
+
+  /* Leaderboard */
+  .leaderboard-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .lb-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--r-md);
+    transition: background var(--transition);
+    cursor: pointer;
+  }
+
+  .lb-item:hover { background: var(--surface-2); }
+
+  .lb-rank {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-3);
+    flex-shrink: 0;
+  }
+
+  .lb-rank.gold { background: var(--gold-light); color: var(--gold); }
+  .lb-rank.silver { background: #f0f0f5; color: #7a7a9a; }
+  .lb-rank.bronze { background: #fdf0ea; color: #b06040; }
+
+  .lb-name { font-size: 13px; font-weight: 500; color: var(--ink); flex: 1; }
+  .lb-college { font-size: 11px; color: var(--ink-3); }
+  .lb-points { font-size: 12px; font-weight: 600; color: var(--accent); }
+
+  /* ── Upload Page ── */
+  .upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+  }
+
+  .upload-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    padding: 28px;
+  }
+
+  .form-group { margin-bottom: 18px; }
+
+  .form-label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-2);
+    margin-bottom: 7px;
+    letter-spacing: 0.01em;
+  }
+
+  .form-input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    color: var(--ink);
+    padding: 0 12px;
+    outline: none;
+    transition: all var(--transition);
+  }
+
+  .form-input:focus { border-color: var(--accent-mid); background: var(--surface); box-shadow: 0 0 0 3px rgba(80,70,229,0.08); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .form-textarea {
+    width: 100%;
+    min-height: 200px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    color: var(--ink);
+    padding: 12px;
+    outline: none;
+    resize: vertical;
+    transition: all var(--transition);
+    line-height: 1.6;
+  }
+
+  .form-textarea:focus { border-color: var(--accent-mid); background: var(--surface); box-shadow: 0 0 0 3px rgba(80,70,229,0.08); }
+
+  .upload-drop-zone {
+    border: 2px dashed var(--border-2);
+    border-radius: var(--r-lg);
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition);
+    margin-bottom: 18px;
+  }
+
+  .upload-drop-zone:hover { border-color: var(--accent-mid); background: var(--accent-light); }
+
+  .drop-icon { font-size: 32px; margin-bottom: 10px; }
+  .drop-text { font-size: 14px; font-weight: 500; color: var(--ink-2); margin-bottom: 5px; }
+  .drop-hint { font-size: 12px; color: var(--ink-4); }
+
+  .tips-card {
+    background: var(--accent-light);
+    border: 1px solid rgba(80,70,229,0.15);
+    border-radius: var(--r-lg);
+    padding: 18px;
+  }
+
+  .tips-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 7px;
+  }
+
+  .tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+    margin-bottom: 9px;
+    line-height: 1.5;
+  }
+
+  .tip-dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── Profile Page ── */
+  .profile-header-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    padding: 28px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .profile-avatar-large {
+    width: 72px; height: 72px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .profile-name {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .profile-college { font-size: 14px; color: var(--ink-3); margin-top: 3px; }
+
+  .profile-badges {
+    display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+  }
+
+  .badge {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .badge-gold { background: var(--gold-light); color: #8a6820; }
+  .badge-purple { background: var(--accent-light); color: var(--accent); }
+  .badge-green { background: var(--green-light); color: var(--green); }
+
+  .profile-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-left: auto;
+    text-align: center;
+  }
+
+  .profile-stat-value {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.5px;
+  }
+
+  .profile-stat-label { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+  }
+
+  /* ── Flashcard viewer ── */
+  .flashcard-container {
+    perspective: 1000px;
+    margin: 20px 0;
+  }
+
+  .flashcard {
+    width: 100%;
+    height: 180px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s;
+    cursor: pointer;
+  }
+
+  .flashcard.flipped { transform: rotateY(180deg); }
+
+  .flashcard-face {
+    position: absolute;
+    width: 100%; height: 100%;
+    backface-visibility: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .flashcard-back {
+    transform: rotateY(180deg);
+    background: var(--accent-light);
+    border-color: rgba(80,70,229,0.2);
+  }
+
+  .flashcard-label {
+    position: absolute;
+    top: 12px; left: 16px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .flashcard-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+
+  .flashcard-back .flashcard-text { color: var(--accent); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--ink);
+    color: white;
+    padding: 12px 18px;
+    border-radius: var(--r-md);
+    font-size: 13.5px;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    display: flex; align-items: center; gap: 8px;
+    animation: toastIn 0.3s ease-out;
+    pointer-events: none;
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Scrollbar global */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .chat-layout { grid-template-columns: 1fr; }
+    .chat-sidebar { display: none; }
+    .upload-grid { grid-template-columns: 1fr; }
+    .profile-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .main { margin-left: 0; }
+    .profile-header-card { flex-direction: column; }
+    .profile-stats { grid-template-columns: repeat(2, 1fr); margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">📚</div>
+      <span class="logo-text">Notely</span>
+    </div>
+    <div class="logo-tagline">Built for Indian college students</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Discover</div>
+    <button class="nav-item active" onclick="showPage('home')">
+      <span class="nav-icon">🏠</span> Home Feed
+    </button>
+    <button class="nav-item" onclick="showPage('search')">
+      <span class="nav-icon">🔍</span> Browse Notes
+      <span class="nav-badge">847</span>
+    </button>
+    <button class="nav-item" onclick="showPage('requests')">
+      <span class="nav-icon">📋</span> Request Board
+    </button>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Study</div>
+    <button class="nav-item" onclick="showPage('notebot')">
+      <span class="nav-icon">🤖</span> NoteBot AI
+      <span class="nav-badge" style="background:var(--green);">AI</span>
+    </button>
+    <button class="nav-item" onclick="showPage('upload')">
+      <span class="nav-icon">⬆</span> Upload Note
+    </button>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Community</div>
+    <button class="nav-item" onclick="showPage('leaderboard')">
+      <span class="nav-icon">🏆</span> Leaderboard
+    </button>
+    <button class="nav-item" onclick="showPage('forum')">
+      <span class="nav-icon">💬</span> College Forum
+    </button>
+  </div>
+
+  <div class="sidebar-section">
+    <button class="nav-item" onclick="showPage('profile')">
+      <span class="nav-icon">👤</span> My Profile
+    </button>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">RS</div>
+      <div>
+        <div class="user-name">Rahul Sharma</div>
+        <div class="user-meta">VNIT Nagpur · Sem 5 · CSE</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Main ── -->
+<main class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <span class="topbar-title" id="topbar-title">Home Feed</span>
+    <div class="topbar-search">
+      <span style="color:var(--ink-4);font-size:15px;">🔍</span>
+      <input type="text" placeholder="Search notes, subjects, topics...">
+    </div>
+    <div class="topbar-actions">
+      <button class="btn-icon" title="Notifications">🔔</button>
+      <button class="btn-primary" onclick="showPage('upload')">
+        ＋ Upload Note
+      </button>
+    </div>
+  </header>
+
+  <!-- ── HOME PAGE ── -->
+  <section class="page active" id="page-home">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Welcome back, Rahul 👋</div>
+        <div class="section-subtitle">Here's what's trending in your college today</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">📚 Notes on Platform</div>
+        <div class="stat-value">12,847</div>
+        <div class="stat-delta">↑ 143 this week</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">🎓 Your Contributions</div>
+        <div class="stat-value">23</div>
+        <div class="stat-delta">↑ 3 this month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">⭐ Your Points</div>
+        <div class="stat-value">1,240</div>
+        <div class="stat-delta">Rank #47 at VNIT</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">💾 Downloads Received</div>
+        <div class="stat-value">389</div>
+        <div class="stat-delta">↑ 21 this week</div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <span style="font-size:13px;color:var(--ink-3);font-weight:500;">Filter:</span>
+      <span class="filter-chip active">All Subjects</span>
+      <span class="filter-chip">Sem 5</span>
+      <span class="filter-chip">CSE</span>
+      <span class="filter-chip">VNIT Nagpur</span>
+      <span class="filter-chip">📈 Trending</span>
+      <span class="filter-chip">🆕 New</span>
+    </div>
+
+    <div class="notes-grid" id="home-notes-grid"></div>
+  </section>
+
+  <!-- ── NOTEBOT AI PAGE ── -->
+  <section class="page" id="page-notebot">
+    <div class="chat-layout">
+      <div class="chat-main">
+        <div class="chat-header">
+          <div style="position:relative;">
+            <div class="notebot-avatar">🤖</div>
+            <div class="notebot-status"></div>
+          </div>
+          <div>
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--ink);">NoteBot</div>
+            <div style="font-size:12px;color:var(--green);font-weight:500;">● Online · Powered by Gemini + MongoDB</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button class="btn-icon" title="Clear chat" onclick="clearChat()">🗑</button>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <div class="msg bot">
+            <div class="msg-avatar bot">🤖</div>
+            <div class="msg-bubble">
+              Hey Rahul! I'm <strong>NoteBot</strong>, your AI study assistant powered by MongoDB Atlas Vector Search + Gemini. 🎓<br><br>
+              I can help you <strong>find notes semantically</strong>, create <strong>exam summaries</strong>, generate <strong>flashcards</strong>, give you a <strong>practice quiz</strong>, or show you what's <strong>trending</strong>.<br><br>
+              What do you need to study today?
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <div class="quick-chips">
+            <button class="quick-chip" onclick="sendQuick('Find me good thermodynamics notes for semester 3')">🔍 Find Thermo Notes</button>
+            <button class="quick-chip" onclick="sendQuick('Summarize the DSA notes on trees and graphs')">📄 Summarize DSA</button>
+            <button class="quick-chip" onclick="sendQuick('Generate 8 flashcards from Fourier series notes')">🃏 Fourier Flashcards</button>
+            <button class="quick-chip" onclick="sendQuick('Give me a 5-question quiz on thermodynamics')">📝 Practice Quiz</button>
+            <button class="quick-chip" onclick="sendQuick('What are the top trending notes at VNIT Nagpur?')">📈 Trending</button>
+          </div>
+          <div class="input-row">
+            <textarea class="chat-textarea" id="chat-input" placeholder="Ask NoteBot anything about your syllabus..." rows="1"
+              onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-sidebar">
+        <div class="sidebar-panel">
+          <div class="sidebar-panel-title">🎯 Your Study Context</div>
+          <div class="context-row">
+            <div>
+              <div class="context-label">COLLEGE</div>
+              <select class="context-select" id="ctx-college">
+                <option>VNIT Nagpur</option>
+                <option>COEP Pune</option>
+                <option>IIT Bombay</option>
+                <option>NIT Warangal</option>
+              </select>
+            </div>
+            <div>
+              <div class="context-label">SEMESTER</div>
+              <select class="context-select" id="ctx-semester">
+                <option>Semester 3</option>
+                <option>Semester 4</option>
+                <option>Semester 5</option>
+                <option>Semester 6</option>
+              </select>
+            </div>
+            <div>
+              <div class="context-label">DEPARTMENT</div>
+              <select class="context-select" id="ctx-dept">
+                <option>Computer Science Engineering</option>
+                <option>Mechanical Engineering</option>
+                <option>Electronics Engineering</option>
+                <option>Civil Engineering</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-panel">
+          <div class="sidebar-panel-title">⚡ Quick Actions</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button onclick="sendQuick('Show me the leaderboard for VNIT Nagpur')" style="width:100%;height:34px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-family:var(--font-body);font-size:12.5px;color:var(--ink-2);cursor:pointer;text-align:left;padding:0 12px;transition:all var(--transition);" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">🏆 College Leaderboard</button>
+            <button onclick="sendQuick('What notes are most popular this week?')" style="width:100%;height:34px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-family:var(--font-body);font-size:12.5px;color:var(--ink-2);cursor:pointer;text-align:left;padding:0 12px;transition:all var(--transition);" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">📈 This Week's Top Notes</button>
+            <button onclick="sendQuick('I have an exam tomorrow on Data Structures. Help me prepare quickly.')" style="width:100%;height:34px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-family:var(--font-body);font-size:12.5px;color:var(--ink-2);cursor:pointer;text-align:left;padding:0 12px;transition:all var(--transition);" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">🚨 Emergency Exam Prep</button>
+          </div>
+        </div>
+
+        <div class="sidebar-panel">
+          <div class="sidebar-panel-title">🃏 Last Flashcard Set</div>
+          <div class="flashcard-container">
+            <div class="flashcard" id="demo-flashcard" onclick="flipCard()">
+              <div class="flashcard-face">
+                <span class="flashcard-label">QUESTION</span>
+                <span class="flashcard-text">What does the First Law of Thermodynamics state?</span>
+              </div>
+              <div class="flashcard-face flashcard-back">
+                <span class="flashcard-label">ANSWER</span>
+                <span class="flashcard-text">Energy cannot be created or destroyed — only converted. dU = δQ − δW</span>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:12px;color:var(--ink-4);margin-top:8px;">Click card to flip · 1 of 10</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SEARCH PAGE ── -->
+  <section class="page" id="page-search">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Browse Notes</div>
+        <div class="section-subtitle">12,847 notes across 340+ Indian colleges</div>
+      </div>
+    </div>
+    <div class="filter-bar" style="margin-bottom:24px;">
+      <select class="filter-select"><option>All Colleges</option><option>VNIT Nagpur</option><option>COEP Pune</option><option>IIT Bombay</option></select>
+      <select class="filter-select"><option>All Departments</option><option>CSE</option><option>Mechanical</option><option>Electronics</option></select>
+      <select class="filter-select"><option>All Semesters</option><option>Semester 3</option><option>Semester 4</option><option>Semester 5</option></select>
+      <select class="filter-select"><option>Sort: Quality Score</option><option>Sort: Newest</option><option>Sort: Most Upvoted</option></select>
+    </div>
+    <div class="notes-grid" id="search-notes-grid"></div>
+  </section>
+
+  <!-- ── UPLOAD PAGE ── -->
+  <section class="page" id="page-upload">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Upload a Note</div>
+        <div class="section-subtitle">Share your knowledge. Earn points. Help your community.</div>
+      </div>
+    </div>
+    <div class="upload-grid">
+      <div class="upload-card">
+        <div class="upload-drop-zone" onclick="showToast('📎 File upload coming soon!')">
+          <div class="drop-icon">📎</div>
+          <div class="drop-text">Drop your PDF or image here</div>
+          <div class="drop-hint">or click to browse · PDF, JPG, PNG up to 20MB</div>
+        </div>
+        <div style="text-align:center;font-size:12px;color:var(--ink-4);margin:-10px 0 18px;">— or paste your notes below —</div>
+        <div class="form-group">
+          <label class="form-label">Note Title *</label>
+          <input class="form-input" placeholder="e.g. Thermodynamics — First & Second Law (Complete)">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Subject *</label>
+            <input class="form-input" placeholder="e.g. Engineering Thermodynamics">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Chapter</label>
+            <input class="form-input" placeholder="e.g. Laws of Thermodynamics">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">College *</label>
+            <input class="form-input" placeholder="VNIT Nagpur">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teacher / Professor</label>
+            <input class="form-input" placeholder="Dr. R. Sharma">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Department *</label>
+            <select class="form-input">
+              <option>Computer Science Engineering</option>
+              <option>Mechanical Engineering</option>
+              <option>Electronics Engineering</option>
+              <option>Civil Engineering</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Semester *</label>
+            <select class="form-input">
+              <option>Semester 1</option><option>Semester 2</option>
+              <option>Semester 3</option><option>Semester 4</option>
+              <option>Semester 5</option><option>Semester 6</option>
+              <option>Semester 7</option><option>Semester 8</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Note Content (paste your notes here) *</label>
+          <textarea class="form-textarea" placeholder="Paste your full notes here. The more complete they are, the more useful NoteBot's AI features will be for other students..."></textarea>
+        </div>
+        <button class="btn-primary" style="width:100%;height:44px;font-size:14px;justify-content:center;border-radius:var(--r-sm);" onclick="showToast('✅ Note uploaded! +50 points earned. Embedding with MongoDB Vector Search...')">
+          Upload Note → Earn 50 Points
+        </button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="tips-card">
+          <div class="tips-title">💡 Tips for a High-Quality Note</div>
+          <div class="tip-item"><div class="tip-dot">1</div>Include the full chapter, not just key points</div>
+          <div class="tip-item"><div class="tip-dot">2</div>Add formulas and worked examples where possible</div>
+          <div class="tip-item"><div class="tip-dot">3</div>Mention the teacher's name — it helps students find exam-relevant content</div>
+          <div class="tip-item"><div class="tip-dot">4</div>Longer notes = better AI summaries and flashcards</div>
+          <div class="tip-item"><div class="tip-dot">5</div>Accurate subject/semester tags = more upvotes from the right audience</div>
+        </div>
+        <div class="sidebar-panel" style="border-radius:var(--r-xl);">
+          <div class="sidebar-panel-title">🏆 Points You'll Earn</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+              <span style="color:var(--ink-2);">Uploading this note</span>
+              <span style="font-weight:600;color:var(--accent);">+50 pts</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+              <span style="color:var(--ink-2);">Per upvote received</span>
+              <span style="font-weight:600;color:var(--accent);">+10 pts</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+              <span style="color:var(--ink-2);">Per comment received</span>
+              <span style="font-weight:600;color:var(--accent);">+5 pts</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+              <span style="color:var(--ink-2);">7-day upload streak</span>
+              <span style="font-weight:600;color:var(--gold);">+100 pts 🔥</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── LEADERBOARD PAGE ── -->
+  <section class="page" id="page-leaderboard">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Leaderboard</div>
+        <div class="section-subtitle">Top contributors making the platform better for everyone</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div class="upload-card">
+        <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:16px;">🌍 Global Top Contributors</div>
+        <div class="leaderboard-list" id="global-lb"></div>
+      </div>
+      <div class="upload-card">
+        <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:16px;">🎓 VNIT Nagpur Rankings</div>
+        <div class="leaderboard-list" id="college-lb"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PROFILE PAGE ── -->
+  <section class="page" id="page-profile">
+    <div class="profile-header-card">
+      <div class="profile-avatar-large">RS</div>
+      <div>
+        <div class="profile-name">Rahul Sharma</div>
+        <div class="profile-college">VNIT Nagpur · Computer Science Engineering · Semester 5</div>
+        <div class="profile-badges">
+          <span class="badge badge-gold">🥇 Top Contributor</span>
+          <span class="badge badge-purple">⚡ Subject Expert: DSA</span>
+          <span class="badge badge-green">🔥 7-Day Streak</span>
+          <span class="badge badge-purple">📚 25+ Uploads</span>
+        </div>
+      </div>
+      <div class="profile-stats">
+        <div><div class="profile-stat-value">1,240</div><div class="profile-stat-label">Points</div></div>
+        <div><div class="profile-stat-value">23</div><div class="profile-stat-label">Uploads</div></div>
+        <div><div class="profile-stat-value">389</div><div class="profile-stat-label">Downloads</div></div>
+        <div><div class="profile-stat-value">#47</div><div class="profile-stat-label">Rank</div></div>
+      </div>
+    </div>
+    <div class="profile-grid">
+      <div>
+        <div style="font-family:var(--font-display);font-size:17px;font-weight:700;margin-bottom:16px;">My Uploaded Notes</div>
+        <div class="notes-grid" id="profile-notes-grid"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="upload-card">
+          <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:16px;">📈 Contribution Timeline</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--ink-2);">This month</span><span style="font-weight:600;">3 notes · 47 upvotes</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--ink-2);">Last month</span><span style="font-weight:600;">5 notes · 89 upvotes</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--ink-2);">Total</span><span style="font-weight:600;">23 notes · 389 upvotes</span></div>
+          </div>
+        </div>
+        <div class="upload-card">
+          <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:16px;">🏅 Badges Earned</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="lb-item"><div class="lb-rank gold">🥇</div><div><div class="lb-name">Top Contributor</div><div class="lb-college">Ranked in top 50 at college</div></div></div>
+            <div class="lb-item"><div class="lb-rank" style="background:var(--accent-light);color:var(--accent);">⚡</div><div><div class="lb-name">Subject Expert: DSA</div><div class="lb-college">8+ notes in one subject</div></div></div>
+            <div class="lb-item"><div class="lb-rank" style="background:var(--green-light);color:var(--green);">🔥</div><div><div class="lb-name">7-Day Streak</div><div class="lb-college">Uploaded 7 days in a row</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── REQUESTS PAGE ── -->
+  <section class="page" id="page-requests">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Note Request Board</div>
+        <div class="section-subtitle">Can't find a note? Request it. Know the content? Fulfill it and earn points.</div>
+      </div>
+      <button class="btn-primary" onclick="showToast('📋 Post a request — feature coming soon!')">+ Post Request</button>
+    </div>
+    <div class="notes-grid">
+      <div class="note-card"><div class="note-subject-tag">🔴 High Priority</div><div class="note-title">DBMS — Normalization (1NF to BCNF) with examples</div><div class="note-preview">Need detailed notes with examples for all normal forms. Exam in 3 days.</div><div class="note-footer"><span style="font-size:12px;color:var(--ink-3);">Posted by Priya · COEP Pune</span><button class="btn-study" onclick="showToast('✅ You chose to fulfill this request! +100 pts on completion')">Fulfill +100pts</button></div></div>
+      <div class="note-card"><div class="note-subject-tag">🟡 Medium Priority</div><div class="note-title">Control Systems — Bode Plot & Root Locus</div><div class="note-preview">Looking for handwritten or typed notes for Unit 3 of Control Systems.</div><div class="note-footer"><span style="font-size:12px;color:var(--ink-3);">Posted by Arjun · VNIT</span><button class="btn-study" onclick="showToast('✅ You chose to fulfill this request!')">Fulfill +80pts</button></div></div>
+      <div class="note-card"><div class="note-subject-tag">🟢 Low Priority</div><div class="note-title">Engineering Economics — Break Even Analysis</div><div class="note-preview">Any notes covering break-even and cost analysis from Sem 6 would help.</div><div class="note-footer"><span style="font-size:12px;color:var(--ink-3);">Posted by Sneha · NIT</span><button class="btn-study" onclick="showToast('✅ You chose to fulfill this request!')">Fulfill +60pts</button></div></div>
+    </div>
+  </section>
+
+  <!-- ── FORUM PAGE ── -->
+  <section class="page" id="page-forum">
+    <div class="section-header">
+      <div>
+        <div class="section-title">VNIT Nagpur Forum</div>
+        <div class="section-subtitle">Academic discussions for your college community</div>
+      </div>
+      <button class="btn-primary" onclick="showToast('💬 Post creation coming soon!')">+ New Post</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="note-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><div class="user-avatar" style="width:28px;height:28px;font-size:11px;">PS</div><div><div style="font-size:13px;font-weight:500;">Priya Singh</div><div style="font-size:11px;color:var(--ink-3);">2 hours ago</div></div><span class="note-subject-tag" style="margin-left:auto;">📌 Exam Alert</span></div><div class="note-title">DSA End-Sem pattern shared by seniors — must read!</div><div class="note-preview">Hey everyone, I got the question pattern from last year's paper. Sharing the topics that definitely appear...</div><div class="note-footer"><span style="font-size:12px;color:var(--ink-3);">💬 14 replies · 🔼 47 upvotes</span><button class="btn-study">Read More</button></div></div>
+      <div class="note-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><div class="user-avatar" style="width:28px;height:28px;font-size:11px;">AK</div><div><div style="font-size:13px;font-weight:500;">Arjun Kumar</div><div style="font-size:11px;color:var(--ink-3);">5 hours ago</div></div><span class="note-subject-tag" style="margin-left:auto;">❓ Question</span></div><div class="note-title">Can someone explain Dijkstra's algorithm in simple terms?</div><div class="note-preview">I've read the textbook version 3 times but it's not clicking. Looking for an intuitive explanation...</div><div class="note-footer"><span style="font-size:12px;color:var(--ink-3);">💬 8 replies · 🔼 23 upvotes</span><button class="btn-study">Read More</button></div></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script>
+/* ── Data ── */
+const SAMPLE_NOTES = [
+  {id:'1', title:'Thermodynamics — First & Second Law Complete Notes', subject:'Engineering Thermodynamics', college:'VNIT Nagpur', semester:3, dept:'Mechanical', teacher:'Dr. R. Sharma', upvotes:47, quality:91, preview:'Complete coverage of First Law (dU = δQ − δW), Second Law, Carnot efficiency, entropy, and applications in steam engines and IC engines.', color:'#5046e5'},
+  {id:'2', title:'Data Structures — Trees, Graphs, BFS & DFS', subject:'DSA', college:'VNIT Nagpur', semester:4, dept:'CSE', teacher:'Prof. A. Kulkarni', upvotes:63, quality:124, preview:'Binary trees, BST traversals (inorder, preorder, postorder), graph representations (adjacency matrix/list), BFS, DFS, Dijkstra\'s algorithm with time complexities.', color:'#1a7f5a'},
+  {id:'3', title:'Fourier Series & Transforms — Engineering Maths III', subject:'Engineering Mathematics III', college:'COEP Pune', semester:5, dept:'Electronics', teacher:'Dr. M. Joshi', upvotes:38, quality:72, preview:'Fourier series formula, coefficients derivation, even and odd functions, Dirichlet conditions, Fourier transforms and applications in signal processing.', color:'#d4a843'},
+  {id:'4', title:'Operating Systems — Process Scheduling Algorithms', subject:'Operating Systems', college:'VNIT Nagpur', semester:5, dept:'CSE', teacher:'Prof. S. Patil', upvotes:55, quality:108, preview:'FCFS, SJF, Round Robin, Priority Scheduling with solved examples. Includes Gantt charts, average waiting time calculations and comparison table.', color:'#c94040'},
+  {id:'5', title:'Computer Networks — TCP/IP Model & Protocols', subject:'Computer Networks', college:'IIT Bombay', semester:6, dept:'CSE', teacher:'Dr. K. Verma', upvotes:71, quality:142, preview:'OSI vs TCP/IP model, IP addressing, subnetting, TCP three-way handshake, UDP comparison, HTTP/HTTPS, DNS resolution with diagrams.', color:'#5046e5'},
+  {id:'6', title:'Strength of Materials — Bending Stress & Deflection', subject:'Strength of Materials', college:'VNIT Nagpur', semester:4, dept:'Mechanical', teacher:'Prof. D. Rao', upvotes:29, quality:58, preview:'Bending moment diagrams, flexure formula derivation, section modulus, slope and deflection by Macaulay\'s method with worked examples.', color:'#1a7f5a'},
+];
+
+const LEADERBOARD = [
+  {rank:1, name:'Priya Desai', college:'COEP Pune', points:2840, badge:'gold'},
+  {rank:2, name:'Arjun Kumar', college:'IIT Bombay', points:2510, badge:'silver'},
+  {rank:3, name:'Neha Singh', college:'NIT Warangal', points:2290, badge:'bronze'},
+  {rank:4, name:'Rahul Sharma', college:'VNIT Nagpur', points:1240, badge:''},
+  {rank:5, name:'Sneha Patil', college:'COEP Pune', points:980, badge:''},
+];
+
+const COLLEGE_LB = [
+  {rank:1, name:'Rahul Sharma', college:'CSE Sem 5', points:1240, badge:'gold'},
+  {rank:2, name:'Arjun Mehta', college:'Mechanical Sem 4', points:890, badge:'silver'},
+  {rank:3, name:'Divya Nair', college:'Electronics Sem 6', points:740, badge:'bronze'},
+  {rank:4, name:'Rohan Joshi', college:'CSE Sem 3', points:620, badge:''},
+  {rank:5, name:'Ananya Sharma', college:'CSE Sem 5', points:510, badge:''},
+];
+
+/* ── AI Backend ── */
+// Replace this URL with your actual Cloud Run URL after deployment
+const API_URL = 'https://notely-agent-xxxx.run.app';
+
+/* ── Navigation ── */
+const pageTitles = {
+  home:'Home Feed', notebot:'NoteBot AI', search:'Browse Notes',
+  upload:'Upload Note', leaderboard:'Leaderboard', forum:'College Forum',
+  profile:'My Profile', requests:'Request Board'
+};
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'"+name+"'")) n.classList.add('active');
+  });
+  document.getElementById('topbar-title').textContent = pageTitles[name] || name;
+}
+
+/* ── Render notes ── */
+function renderNote(note, compact=false) {
+  const qClass = note.quality >= 100 ? 'quality-high' : 'quality-mid';
+  const qLabel = note.quality >= 100 ? '⭐ High Quality' : '👍 Good';
+  return `
+    <div class="note-card" onclick="openNote('${note.id}')">
+      <div class="note-subject-tag">${note.subject}</div>
+      <div class="note-title">${note.title}</div>
+      <div class="note-preview">${note.preview}</div>
+      <div class="note-meta">
+        <span class="note-meta-item">🏛 ${note.college}</span>
+        <span class="note-meta-item">📅 Sem ${note.semester}</span>
+        <span class="note-meta-item">👨‍🏫 ${note.teacher}</span>
+      </div>
+      <div class="note-footer">
+        <span class="note-upvotes" onclick="event.stopPropagation();upvote('${note.id}',this)">
+          ▲ <span class="upvote-count">${note.upvotes}</span>
+        </span>
+        <span class="quality-badge ${qClass}">${qLabel}</span>
+        <button class="btn-study" onclick="event.stopPropagation();studyNote('${note.id}')">Study with AI</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderLeaderboard(data, containerId) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = data.map(u => `
+    <div class="lb-item">
+      <div class="lb-rank ${u.badge}">${u.rank}</div>
+      <div>
+        <div class="lb-name">${u.name}</div>
+        <div class="lb-college">${u.college}</div>
+      </div>
+      <div class="lb-points">${u.points.toLocaleString()} pts</div>
+    </div>
+  `).join('');
+}
+
+function populateGrids() {
+  document.getElementById('home-notes-grid').innerHTML = SAMPLE_NOTES.map(n => renderNote(n)).join('');
+  document.getElementById('search-notes-grid').innerHTML = SAMPLE_NOTES.map(n => renderNote(n)).join('');
+  document.getElementById('profile-notes-grid').innerHTML = SAMPLE_NOTES.slice(0,3).map(n => renderNote(n)).join('');
+  renderLeaderboard(LEADERBOARD, 'global-lb');
+  renderLeaderboard(COLLEGE_LB, 'college-lb');
+}
+
+/* ── Note actions ── */
+function openNote(id) {
+  const note = SAMPLE_NOTES.find(n => n.id === id);
+  if (note) {
+    showToast(`📖 Opening: ${note.title.substring(0,40)}...`);
+    showPage('notebot');
+    setTimeout(() => {
+      document.getElementById('chat-input').value = `Tell me about the note on "${note.title}" and give me a summary`;
+      document.getElementById('chat-input').focus();
+    }, 300);
+  }
+}
+
+function studyNote(id) {
+  const note = SAMPLE_NOTES.find(n => n.id === id);
+  if (note) {
+    showPage('notebot');
+    setTimeout(() => {
+      const query = `Generate 10 flashcards from the note titled "${note.title}" on the subject ${note.subject}`;
+      document.getElementById('chat-input').value = query;
+    }, 300);
+  }
+}
+
+function upvote(id, el) {
+  const countEl = el.querySelector('.upvote-count');
+  const current = parseInt(countEl.textContent);
+  countEl.textContent = current + 1;
+  el.style.borderColor = 'var(--gold)';
+  el.style.color = 'var(--gold)';
+  el.style.background = 'var(--gold-light)';
+  showToast('⭐ Upvoted! Quality score updated in MongoDB.');
+}
+
+/* ── Chat ── */
+const chatMessages = [];
+let isLoading = false;
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function sendQuick(text) {
+  showPage('notebot');
+  setTimeout(() => {
+    document.getElementById('chat-input').value = text;
+    sendMessage();
+  }, 100);
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+
+  appendMessage('user', text);
+  input.value = '';
+  input.style.height = '42px';
+  chatMessages.push({ role: 'user', content: text });
+
+  isLoading = true;
+  document.getElementById('send-btn').disabled = true;
+  showTyping();
+
+  try {
+    const college = document.getElementById('ctx-college')?.value || 'VNIT Nagpur';
+    const semester = document.getElementById('ctx-semester')?.value || 'Semester 5';
+    const dept = document.getElementById('ctx-dept')?.value || 'Computer Science Engineering';
+
+    const response = await fetch(API_URL + '/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        college: college,
+        semester: semester.replace('Semester ', ''),
+        department: dept,
+        chat_history: chatMessages.slice(-8)
+      })
+    });
+
+    removeTyping();
+
+    if (!response.ok) throw new Error('API error');
+    const data = await response.json();
+    const reply = data.response || 'Sorry, I had trouble responding. Please try again.';
+    appendMessage('bot', formatBotMessage(reply));
+    chatMessages.push({ role: 'model', content: reply });
+
+  } catch (err) {
+    removeTyping();
+    // Demo mode fallback if API not deployed yet
+    const demoReply = getDemoReply(text);
+    appendMessage('bot', formatBotMessage(demoReply));
+    chatMessages.push({ role: 'model', content: demoReply });
+  }
+
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+}
+
+function getDemoReply(text) {
+  const t = text.toLowerCase();
+  if (t.includes('thermodynamics') || t.includes('thermo')) {
+    return `I found **3 highly-rated Thermodynamics notes** for you! 🔥\n\n**1. Thermodynamics — First & Second Law Complete Notes**\n   📍 VNIT Nagpur · Sem 3 · Mechanical\n   ⭐ Quality Score: 91 · ▲ 47 upvotes\n   By Dr. R. Sharma\n\nThis is the top-rated thermodynamics note on the platform. Would you like me to:\n- 📄 **Summarize** it for quick revision?\n- 🃏 **Generate flashcards** from it?\n- 📝 **Create a practice quiz**?`;
+  }
+  if (t.includes('flashcard') || t.includes('flash card')) {
+    return `Here are **10 flashcards** generated from your note! 🃏\n\n**Q1:** What does the First Law of Thermodynamics state?\n**A:** Energy cannot be created or destroyed, only converted. dU = δQ − δW\n\n**Q2:** Define entropy.\n**A:** A measure of disorder in a system. ΔS ≥ 0 for any spontaneous process.\n\n**Q3:** What is Carnot efficiency?\n**A:** η = 1 − (T_cold/T_hot) — gives the maximum possible efficiency for any heat engine.\n\n*(Cards saved to your profile. Check the flashcard viewer →)*`;
+  }
+  if (t.includes('quiz') || t.includes('practice')) {
+    return `Here's a **5-question practice quiz** on Thermodynamics! 📝\n\n**Q1.** The Carnot efficiency of a heat engine operating between 600K and 300K is:\nA) 25%   B) 50%   C) 75%   D) 100%\n✅ **Answer: B) 50%**\nη = 1 − (300/600) = 0.5 = 50%\n\n**Q2.** For a reversible adiabatic process, the change in entropy is:\nA) +ve   B) −ve   C) Zero   D) Infinite\n✅ **Answer: C) Zero**\nAdiabatic + reversible = isentropic (ΔS = 0)\n\nWant the remaining 3 questions? 💪`;
+  }
+  if (t.includes('trending') || t.includes('popular')) {
+    return `📈 **Trending Notes at VNIT Nagpur this week:**\n\n1. **Computer Networks — TCP/IP** · 71 upvotes · Score: 142\n2. **DSA — Trees & Graphs** · 63 upvotes · Score: 124\n3. **OS — Process Scheduling** · 55 upvotes · Score: 108\n4. **Thermodynamics** · 47 upvotes · Score: 91\n5. **SOM — Bending Stress** · 29 upvotes · Score: 58\n\nWant me to summarize any of these?`;
+  }
+  if (t.includes('leaderboard') || t.includes('top contributor')) {
+    return `🏆 **Top Contributors at VNIT Nagpur:**\n\n1. 🥇 **Rahul Sharma** — 1,240 pts (that's you!)\n2. 🥈 Arjun Mehta — 890 pts\n3. 🥉 Divya Nair — 740 pts\n4. Rohan Joshi — 620 pts\n5. Ananya Sharma — 510 pts\n\nYou're ranked **#1** at your college! Keep uploading to maintain your lead. 💪`;
+  }
+  if (t.includes('summarize') || t.includes('summary')) {
+    return `📄 **Summary: Thermodynamics Complete Notes**\n\n**First Law of Thermodynamics**\nEnergy conservation principle: energy can't be created or destroyed, only converted. Mathematically: *dU = δQ − δW*\n\n**Key Concepts:**\n• Internal energy (U) — total stored energy\n• Heat transfer (Q) — energy via temperature difference\n• Work (W) — mechanical energy transfer\n\n**Second Law of Thermodynamics**\nHeat flows spontaneously from hot → cold (never reverse). Entropy always increases in spontaneous processes.\n\n**Carnot Engine**\nMaximum theoretical efficiency: *η = 1 − T_cold/T_hot*\n\n**Applications:** Steam engines, refrigerators, IC engines, heat pumps\n\nWant flashcards from this summary? 🃏`;
+  }
+  return `I found relevant content in MongoDB Atlas! Here's what I can do with that:\n\n- 🔍 **Search notes** by subject, semester, or college\n- 📄 **Summarize** any note for quick revision\n- 🃏 **Generate flashcards** for memorization\n- 📝 **Create practice quizzes** with explanations\n- 📈 Show **trending notes** at your college\n\nTry asking: *"Find DSA notes for semester 4"* or *"Make flashcards on Fourier series"*`;
+}
+
+function formatBotMessage(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+
+function appendMessage(role, content) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-avatar ${role}">${role === 'bot' ? '🤖' : 'RS'}</div>
+    <div class="msg-bubble">${content}</div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showTyping() {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.id = 'typing-msg';
+  div.innerHTML = `
+    <div class="msg-avatar bot">🤖</div>
+    <div class="msg-bubble" style="padding:0;">
+      <div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing-msg');
+  if (el) el.remove();
+}
+
+function clearChat() {
+  document.getElementById('chat-messages').innerHTML = '';
+  chatMessages.length = 0;
+  appendMessage('bot', formatBotMessage("Chat cleared! How can I help you study today? 📚"));
+}
+
+/* ── Flashcard ── */
+function flipCard() {
+  document.getElementById('demo-flashcard').classList.toggle('flipped');
+}
+
+/* ── Toast ── */
+function showToast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+/* ── Filter chips ── */
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    this.closest('.filter-bar').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+/* ── Init ── */
+populateGrids();
+</script>
+</body>
+</html>
