@@ -1,7 +1,13 @@
-google-cloud-aiplatform>=1.38.0
-pymongo>=4.6.0
-fastapi>=0.104.0
-uvicorn>=0.24.0
-python-dotenv>=1.0.0
-PyPDF2>=3.0.0
+# Google Cloud / AI
+google-cloud-aiplatform>=1.50.0
 
+# Database
+pymongo>=4.6.0
+
+# Web framework
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.0.0
+
+# Utilities
+python-dotenv>=1.0.0

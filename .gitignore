@@ -1,6 +1,13 @@
 .env
+venv/
+.venv/
 __pycache__/
 *.pyc
-.venv/
-venv/
-.cache/
+
+google-cloud-sdk/
+cloud_env.bat
+install_mode
+mcp_config.json
+seed_data.py
+supercloud-16x16.ico
+uninstaller.exe
