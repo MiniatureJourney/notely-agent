@@ -453,11 +453,11 @@ body{
     <div class="sec-hdr"><div><div class="sec-ttl">Upload a Note</div><div class="sec-sub">Share knowledge, earn points, help your community</div></div></div>
     <div class="ugrid">
       <div class="ucard">
-        <input type="file" id="up-file" style="display:none" accept="image/*" onchange="handleOCR(this)">
+        <input type="file" id="up-file" style="display:none" accept="image/*,application/pdf" onchange="handleOCR(this)">
         <div class="dz" onclick="document.getElementById('up-file').click()">
           <div style="font-size:26px;margin-bottom:7px">📸</div>
-          <div style="font-size:13px;font-weight:500;color:var(--ink2);margin-bottom:3px">Take Photo / Upload Image for OCR</div>
-          <div style="font-size:11px;color:var(--ink4)">JPG, PNG · Auto-classifies Subject & Tags notes!</div>
+          <div style="font-size:13px;font-weight:500;color:var(--ink2);margin-bottom:3px">Take Photo / Upload Image or PDF for Extraction</div>
+          <div style="font-size:11px;color:var(--ink4)">JPG, PNG, PDF · Auto-classifies Subject & Tags notes!</div>
         </div>
         <div style="text-align:center;font-size:11px;color:var(--ink4);margin:-4px 0 14px;position:relative">
           <span style="background:#fff;padding:0 10px;position:relative;z-index:1">or paste your notes below</span>
