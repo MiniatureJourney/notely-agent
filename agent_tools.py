@@ -33,7 +33,7 @@ from database import (
     get_requests,
     get_forum_posts,
 )
-from database import update_academic_memory
+from database import update_academic_memory, record_study_session, add_learning_pattern
 from embeddings import get_embedding
 from datetime import datetime
 
@@ -313,6 +313,13 @@ def tool_record_quiz_score(topic: str, score: float, user_id: str = "") -> str:
     """Record a quiz score and update the user's strong/weak topics."""
     return update_academic_memory(user_id, topic, score)
 
+def tool_record_study_session(topic: str, user_id: str = "") -> str:
+    """Record that the student has studied a topic."""
+    return record_study_session(user_id, topic)
+
+def tool_add_learning_pattern(pattern: str, user_id: str = "") -> str:
+    """Record a learning pattern (e.g. 'Student struggles with visualising graphs')."""
+    return add_learning_pattern(user_id, pattern)
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  DISPATCHER  (FIX 6: was completely missing — main.py imports this)
@@ -335,9 +342,11 @@ def dispatch_tool(tool_name: str, tool_args: dict, user_id: str = "") -> str:
         "get_requests":        tool_get_requests,
         "get_forum_posts":     tool_get_forum_posts,
         "record_quiz_score":   tool_record_quiz_score,
+        "record_study_session":tool_record_study_session,
+        "add_learning_pattern":tool_add_learning_pattern,
     }
 
-    if tool_name == "record_quiz_score":
+    if tool_name in ("record_quiz_score", "record_study_session", "add_learning_pattern"):
         tool_args["user_id"] = user_id
 
     fn = mapping.get(tool_name)

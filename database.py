@@ -64,6 +64,10 @@ def _db():
 def notes_col():    return _db()["notes"]
 def users_col():    return _db()["users"]
 def comments_col(): return _db()["comments"]      # FIX 8: was missing
+def user_memory_col(): return _db()["user_memory"]
+def study_history_col(): return _db()["study_history"]
+def quiz_results_col(): return _db()["quiz_results"]
+def learning_patterns_col(): return _db()["learning_patterns"]
 def requests_col(): return _db()["requests"]
 def forum_col():    return _db()["forum_posts"]
 
@@ -317,9 +321,6 @@ def upsert_user(user_data: dict) -> str:
                 "points":     0,
                 "badges":     [],
                 "created_at": datetime.utcnow(),
-                "weak_topics": [],
-                "strong_topics": [],
-                "quiz_history": [],
                 "study_streak": 0,
             },
         },
@@ -330,8 +331,14 @@ def upsert_user(user_data: dict) -> str:
 
 
 def get_user_by_id(user_id: str) -> dict | None:
-    """FIX 7: was missing — used by profile page."""
+    """FIX 7: was missing — used by profile page. Includes merged memory."""
     doc = users_col().find_one({"user_id": user_id})
+    if not doc:
+        return None
+    mem = user_memory_col().find_one({"user_id": user_id}) or {}
+    doc["weak_topics"] = mem.get("weak_topics", [])
+    doc["strong_topics"] = mem.get("strong_topics", [])
+    doc["last_studied"] = mem.get("last_studied", "Nothing yet")
     return _serial(doc)
 
 
@@ -365,20 +372,26 @@ def get_leaderboard(college: str = "", limit: int = 10) -> list:
     return list(cursor)
 
 
+def get_user_memory(user_id: str) -> dict:
+    mem = user_memory_col().find_one({"user_id": user_id})
+    if mem: return _serial(mem)
+    return {"weak_topics": [], "strong_topics": [], "last_studied": "Nothing yet"}
+
+def get_learning_patterns(user_id: str) -> list:
+    cursor = learning_patterns_col().find({"user_id": user_id}).sort("detected_at", DESCENDING).limit(5)
+    return [c["pattern"] for c in cursor]
+
 def update_academic_memory(user_id: str, topic: str, score: float) -> str:
     """Updates quiz history, strong/weak topics based on score (0 to 100)."""
     if not user_id or user_id == "anonymous":
         return "Anonymous user, cannot save memory."
     
-    user = users_col().find_one({"user_id": user_id})
-    if not user:
-        return "User not found."
-    
-    new_history = {"topic": topic, "score": score, "date": datetime.utcnow()}
-    users_col().update_one(
-        {"user_id": user_id},
-        {"$push": {"quiz_history": new_history}}
-    )
+    quiz_results_col().insert_one({
+        "user_id": user_id,
+        "topic": topic,
+        "score": score,
+        "date": datetime.utcnow()
+    })
     
     update_op = {}
     if score >= 75:
@@ -391,9 +404,35 @@ def update_academic_memory(user_id: str, topic: str, score: float) -> str:
         update_op["$pull"] = {"weak_topics": topic}
 
     if update_op:
-        users_col().update_one({"user_id": user_id}, update_op)
-    
-    return f"Recorded {score}% in {topic}. Academic memory updated!"
+        user_memory_col().update_one(
+            {"user_id": user_id},
+            {**update_op, "$setOnInsert": {"user_id": user_id}},
+            upsert=True
+        )
+    return f"Recorded {score}% in {topic} to quiz_results collection. Memory updated!"
+
+def record_study_session(user_id: str, topic: str) -> str:
+    if not user_id or user_id == "anonymous": return "Anonymous"
+    study_history_col().insert_one({
+        "user_id": user_id,
+        "topic": topic,
+        "date": datetime.utcnow()
+    })
+    user_memory_col().update_one(
+        {"user_id": user_id},
+        {"$set": {"last_studied": topic}, "$setOnInsert": {"weak_topics": [], "strong_topics": []}},
+        upsert=True
+    )
+    return f"Recorded study session for {topic} in study_history collection."
+
+def add_learning_pattern(user_id: str, pattern: str) -> str:
+    if not user_id or user_id == "anonymous": return "Anonymous"
+    learning_patterns_col().insert_one({
+        "user_id": user_id,
+        "pattern": pattern,
+        "detected_at": datetime.utcnow()
+    })
+    return f"Learning pattern logged to learning_patterns collection."
 
 
 # ══════════════════════════════════════════════════════════════════════════════

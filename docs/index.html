@@ -261,7 +261,7 @@ body{
 .psl{font-size:11px;color:var(--ink3);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
 .pgrid{display:grid;grid-template-columns:2fr 1fr;gap:24px}
 
-.p-topics{margin-top:14px;font-size:13px;background:var(--bg3);padding:14px;border-radius:var(--r12);border:1px solid var(--bdr)}
+.p-topics{margin-top:14px;font-size:13px;background:var(--bg3);padding:14px;border-radius:var(--r12);border:1px solid var(--bdr);display:flex;flex-direction:column;gap:6px}
 /* ── REQUESTS / FORUM ── */
 .req-list{display:flex;flex-direction:column;gap:14px}
 .req-card{background:var(--bg2);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:var(--r18);padding:20px;display:flex;flex-direction:column;gap:10px;transition:all var(--t)}
@@ -453,10 +453,11 @@ body{
     <div class="sec-hdr"><div><div class="sec-ttl">Upload a Note</div><div class="sec-sub">Share knowledge, earn points, help your community</div></div></div>
     <div class="ugrid">
       <div class="ucard">
-        <div class="dz" onclick="toast('📎 PDF upload coming — paste notes below for now!')">
-          <div style="font-size:26px;margin-bottom:7px">📎</div>
-          <div style="font-size:13px;font-weight:500;color:var(--ink2);margin-bottom:3px">Drop PDF here</div>
-          <div style="font-size:11px;color:var(--ink4)">PDF, JPG, PNG · up to 20MB</div>
+        <input type="file" id="up-file" style="display:none" accept="image/*" onchange="handleOCR(this)">
+        <div class="dz" onclick="document.getElementById('up-file').click()">
+          <div style="font-size:26px;margin-bottom:7px">📸</div>
+          <div style="font-size:13px;font-weight:500;color:var(--ink2);margin-bottom:3px">Take Photo / Upload Image for OCR</div>
+          <div style="font-size:11px;color:var(--ink4)">JPG, PNG · Auto-classifies Subject & Tags notes!</div>
         </div>
         <div style="text-align:center;font-size:11px;color:var(--ink4);margin:-4px 0 14px;position:relative">
           <span style="background:#fff;padding:0 10px;position:relative;z-index:1">or paste your notes below</span>
@@ -525,8 +526,9 @@ body{
         <div class="pcol" id="p-col">—</div>
         <div class="pbdgs" id="p-badges"></div>
         <div class="p-topics" id="p-memory">
-          <div style="margin-bottom:3px"><strong style="color:var(--grn)">💪 Strong Topics:</strong> <span id="p-strong">—</span></div>
+          <div><strong style="color:var(--grn)">💪 Strong Topics:</strong> <span id="p-strong">—</span></div>
           <div><strong style="color:var(--red)">⚠️ Weak Topics:</strong> <span id="p-weak">—</span></div>
+          <div><strong style="color:var(--ac)">🕒 Last Studied:</strong> <span id="p-last">—</span></div>
         </div>
       </div>
       <div class="pstats">
@@ -690,16 +692,22 @@ async function checkHealth(){
    ════════════════════════════════════════════════════ */
 function noteCard(n){
   const id    = n._id || n.id || '';
-  const qc    = (n.quality_score||0)>=100?'qh':'qm';
-  const ql    = (n.quality_score||0)>=100?'⭐ High Quality':'👍 Good';
+  const qs    = n.quality_score !== undefined ? Number(n.quality_score).toFixed(0) : 50;
+  const qc    = qs >= 80 ? 'qh' : (qs >= 50 ? 'qm' : '');
+  const ql    = `⭐ Score: ${qs}/100`;
   const prev  = n.content_preview || n.preview || 'No preview available.';
   const teach = n.teacher || 'Unknown';
+  
+  const strengths = (n.strengths && n.strengths.length > 0) ? `<div style="font-size:11px;color:var(--grn);margin-top:6px;line-height:1.4">✓ ${n.strengths[0]}</div>` : '';
+  const weaknesses = (n.weaknesses && n.weaknesses.length > 0) ? `<div style="font-size:11px;color:var(--red);margin-top:2px;line-height:1.4">✗ ${n.weaknesses[0]}</div>` : '';
+
   return `
     <div class="ncard" onclick="openNote('${id}','${(n.title||'').replace(/'/g,"\\'")}')">
       <div class="ntag">${n.subject||'General'}</div>
       <div class="nttl">${n.title||'Untitled'}</div>
       <div class="nprev">${prev}</div>
-      <div class="nmeta">
+      ${strengths}${weaknesses}
+      <div class="nmeta" style="margin-top:auto">
         <span>🏛 ${n.college||'?'}</span>
         <span>📅 Sem ${n.semester||'?'}</span>
         <span>👨‍🏫 ${teach}</span>
@@ -912,6 +920,47 @@ function fallback(t){
 /* ════════════════════════════════════════════════════
    UPLOAD — calls real /upload-note with JSON body
    ════════════════════════════════════════════════════ */
+async function handleOCR(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const msgEl = document.getElementById('up-msg');
+  msgEl.textContent = '📸 Extracting text and classifying using Google Gemini OCR...';
+  msgEl.style.color = 'var(--ac)';
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('uploaded_by', USER.user_id);
+  formData.append('college', document.getElementById('up-col').value || USER.college);
+  formData.append('department', document.getElementById('up-dept').value || USER.department);
+
+  try {
+    const res = await fetch(API+'/api/ocr-note', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if(res.ok) {
+      toast('🎉 OCR successful! Note auto-classified and uploaded.');
+      msgEl.textContent = data.message;
+      msgEl.style.color = 'var(--grn)';
+      
+      if(data.extracted) {
+        document.getElementById('up-title').value = data.extracted.title || '';
+        document.getElementById('up-sub').value = data.extracted.subject || '';
+        document.getElementById('up-chap').value = data.extracted.chapter || '';
+        document.getElementById('up-sem').value = data.extracted.semester || '';
+        document.getElementById('up-content').value = data.extracted.content || '';
+      }
+      if(document.getElementById('page-home').classList.contains('on')) loadHome();
+    } else {
+      throw new Error(data.detail || 'Failed to process image');
+    }
+  } catch(e) {
+    msgEl.textContent = '⚠️ OCR Failed: ' + e.message;
+    msgEl.style.color = 'var(--red)';
+    toast('OCR Failed. Please try again.');
+  }
+}
 async function submitNote(){
   const title   = document.getElementById('up-title').value.trim();
   const subject = document.getElementById('up-sub').value.trim();
@@ -993,6 +1042,7 @@ async function loadProfile(){
     const w = (u.weak_topics||[]).join(', '); const s = (u.strong_topics||[]).join(', ');
     document.getElementById('p-weak').textContent = w ? w : 'None recorded yet';
     document.getElementById('p-strong').textContent = s ? s : 'None recorded yet';
+    document.getElementById('p-last').textContent = u.last_studied || 'Nothing yet';
     document.getElementById('p-badge-list').innerHTML=badges.length
       ?badges.map(b=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr)"><span class="bdg bp">${b}</span></div>`).join('')
       :'<div style="font-size:12px;color:var(--ink3)">No badges yet. Upload and get upvotes!</div>';

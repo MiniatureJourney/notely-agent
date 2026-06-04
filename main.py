@@ -29,7 +29,7 @@ from vertexai.generative_models import (
     Tool,
     FunctionDeclaration,
 )
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -60,8 +60,12 @@ from database import (
     upsert_user,
     get_user_by_id,
     update_user_points,
+    get_learning_patterns,
 )
 from agent_tools import dispatch_tool
+from rules_engine import evaluate_note_quality
+from mcp_bridge import mcp_router, start_mcp, stop_mcp
+from contextlib import asynccontextmanager
 
 # ── Vertex AI init (guarded) ──────────────────────────────────────────────────
 PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT", "")
@@ -69,8 +73,15 @@ REGION  = os.getenv("VERTEX_REGION", "us-central1")
 if PROJECT:
     vertexai.init(project=PROJECT, location=REGION)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await start_mcp()
+    yield
+    await stop_mcp()
+
 # ── App ───────────────────────────────────────────────────────────────────────
-app = FastAPI(title="Notely API", version="2.0.0")
+app = FastAPI(title="Notely API", version="2.0.0", lifespan=lifespan)
+app.include_router(mcp_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -217,6 +228,28 @@ _TOOLS = Tool(function_declarations=[
             "required": ["topic", "score"],
         },
     ),
+    FunctionDeclaration(
+        name="record_study_session",
+        description="Record what the student just studied to update their study history",
+        parameters={
+            "type": "object",
+            "properties": {
+                "topic": {"type": "string", "description": "The topic studied (e.g. Binary Trees)"},
+            },
+            "required": ["topic"],
+        },
+    ),
+    FunctionDeclaration(
+        name="add_learning_pattern",
+        description="Log a learning pattern or observation about how the student learns",
+        parameters={
+            "type": "object",
+            "properties": {
+                "pattern": {"type": "string", "description": "The pattern (e.g. 'Struggles with visualising graphs', 'Prefers step-by-step math')"},
+            },
+            "required": ["pattern"],
+        },
+    ),
 ])
 
 _SYSTEM_PROMPT = """You are NoteBot, an intelligent AI study assistant on Notely — \
@@ -238,7 +271,8 @@ Your behaviour:
 - When a student says "summarise it" or "make flashcards" after a search,
   use the note_id from the previous search result
 - ACT AS A PERSONAL ACADEMIC OS: If you see the student's Academic Memory, actively recommend reviewing weak topics (offer notes/flashcards) and praise them for strong topics!
-- ALWAYS evaluate quizzes when the student answers them, and call record_quiz_score to update their memory!"""
+- ALWAYS evaluate quizzes when the student answers them, and call record_quiz_score to update their memory!
+- Notice patterns in the student's behavior and record them via add_learning_pattern. Record study sessions using record_study_session."""
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -325,7 +359,11 @@ async def chat(req: ChatRequest):
             if user:
                 weak = ", ".join(user.get("weak_topics", [])) or "None yet"
                 strong = ", ".join(user.get("strong_topics", [])) or "None yet"
-                academic_memory = f"\\nAcademic Memory for User:\\n- Weak Topics: {weak}\\n- Strong Topics: {strong}\\n(Use this to recommend targeted study sessions!)"
+                last = user.get("last_studied", "Nothing yet")
+                patterns = get_learning_patterns(req.user_id)
+                pattern_str = "\\n- Patterns: " + ", ".join(patterns) if patterns else ""
+                
+                academic_memory = f"\\nAcademic Memory for User:\\n- Weak Topics: {weak}\\n- Strong Topics: {strong}\\n- Last Studied: {last}{pattern_str}\\n(Use this to recommend targeted study sessions and adapt to their patterns!)"
 
         system = (
             f"{_SYSTEM_PROMPT}\\n\\n"
@@ -402,12 +440,95 @@ async def upload_note(note: NoteUpload):
         embed_text   = f"{note.title} {note.subject} {note.chapter} {note.full_content[:3000]}"
         note_dict["embedding"]       = get_embedding(embed_text)
         note_dict["content_preview"] = note.full_content[:500]
+        
+        # Apply Rule-Based Scoring
+        eval_data = evaluate_note_quality(note.full_content)
+        note_dict["quality_score"] = eval_data["score"]
+        note_dict["strengths"] = eval_data["strengths"]
+        note_dict["weaknesses"] = eval_data["weaknesses"]
 
         note_id = insert_note(note_dict)
         update_user_points(note.uploaded_by, 50)
 
         return {"note_id": note_id, "message": "Note uploaded and embedded! +50 pts"}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+import json
+
+@app.post("/api/ocr-note")
+async def ocr_note(
+    file: UploadFile = File(...),
+    uploaded_by: str = Form("anonymous"),
+    college: str = Form(""),
+    department: str = Form("")
+):
+    """
+    Accepts an image, sends to Gemini 2.5 Flash for OCR, auto-classifies subject/topic/semester,
+    and automatically uploads the extracted note.
+    """
+    try:
+        file_bytes = await file.read()
+        
+        model = GenerativeModel("gemini-2.5-flash")
+        prompt = '''Analyze this handwritten or typed note.
+Extract the raw text comprehensively.
+Also, auto-classify it into a Subject, Topic (chapter), Semester (1-8), and an appropriate Title.
+Respond ONLY in valid JSON format exactly like this:
+{
+  "content": "extracted text...",
+  "subject": "e.g. Engineering Mathematics",
+  "chapter": "e.g. Fourier Series",
+  "semester": 5,
+  "title": "e.g. Fourier Transforms Overview"
+}'''
+        
+        response = model.generate_content([
+            Part.from_data(data=file_bytes, mime_type=file.content_type),
+            prompt
+        ])
+        
+        text = response.text.strip()
+        if text.startswith("```json"): text = text[7:-3]
+        elif text.startswith("```"): text = text[3:-3]
+        
+        parsed = json.loads(text.strip())
+        
+        note_dict = {
+            "title": parsed.get("title", "Untitled OCR Note"),
+            "subject": parsed.get("subject", "Unknown Subject"),
+            "chapter": parsed.get("chapter", "Unknown Chapter"),
+            "semester": int(parsed.get("semester", 1)),
+            "college": college,
+            "department": department,
+            "uploaded_by": uploaded_by,
+            "full_content": parsed.get("content", ""),
+            "upvotes": 0,
+            "downloads": 0,
+        }
+        
+        # Apply Rule-Based Scoring
+        eval_data = evaluate_note_quality(note_dict["full_content"])
+        note_dict["quality_score"] = eval_data["score"]
+        note_dict["strengths"] = eval_data["strengths"]
+        note_dict["weaknesses"] = eval_data["weaknesses"]
+        
+        embed_text = f"{note_dict['title']} {note_dict['subject']} {note_dict['chapter']} {note_dict['full_content'][:3000]}"
+        note_dict["embedding"] = get_embedding(embed_text)
+        note_dict["content_preview"] = note_dict["full_content"][:500]
+
+        note_id = insert_note(note_dict)
+        update_user_points(uploaded_by, 100) # Give 100 points for OCR
+        
+        return {
+            "note_id": note_id, 
+            "message": f"OCR successful! Classified as {note_dict['subject']} - {note_dict['chapter']}. Note embedded +100 pts", 
+            "extracted": parsed
+        }
+
+    except Exception as e:
+        print(f"[/api/ocr-note] error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
