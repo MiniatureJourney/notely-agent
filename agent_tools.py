@@ -33,6 +33,7 @@ from database import (
     get_requests,
     get_forum_posts,
 )
+from database import update_academic_memory
 from embeddings import get_embedding
 from datetime import datetime
 
@@ -305,10 +306,19 @@ def tool_get_forum_posts(college: str = "") -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  TOOL 10 — Academic Memory
+# ══════════════════════════════════════════════════════════════════════════════
+
+def tool_record_quiz_score(topic: str, score: float, user_id: str = "") -> str:
+    """Record a quiz score and update the user's strong/weak topics."""
+    return update_academic_memory(user_id, topic, score)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  DISPATCHER  (FIX 6: was completely missing — main.py imports this)
 # ══════════════════════════════════════════════════════════════════════════════
 
-def dispatch_tool(tool_name: str, tool_args: dict) -> str:
+def dispatch_tool(tool_name: str, tool_args: dict, user_id: str = "") -> str:
     """
     Central dispatcher called by main.py's agentic loop.
     Maps tool_name strings (from Gemini function calls) to Python functions.
@@ -324,7 +334,11 @@ def dispatch_tool(tool_name: str, tool_args: dict) -> str:
         "get_comments":        tool_get_comments,
         "get_requests":        tool_get_requests,
         "get_forum_posts":     tool_get_forum_posts,
+        "record_quiz_score":   tool_record_quiz_score,
     }
+
+    if tool_name == "record_quiz_score":
+        tool_args["user_id"] = user_id
 
     fn = mapping.get(tool_name)
     if fn is None:

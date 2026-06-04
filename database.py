@@ -317,6 +317,10 @@ def upsert_user(user_data: dict) -> str:
                 "points":     0,
                 "badges":     [],
                 "created_at": datetime.utcnow(),
+                "weak_topics": [],
+                "strong_topics": [],
+                "quiz_history": [],
+                "study_streak": 0,
             },
         },
         upsert=True,
@@ -359,6 +363,37 @@ def get_leaderboard(college: str = "", limit: int = 10) -> list:
          "points": 1, "badges": 1, "department": 1},
     ).sort("points", DESCENDING).limit(limit)
     return list(cursor)
+
+
+def update_academic_memory(user_id: str, topic: str, score: float) -> str:
+    """Updates quiz history, strong/weak topics based on score (0 to 100)."""
+    if not user_id or user_id == "anonymous":
+        return "Anonymous user, cannot save memory."
+    
+    user = users_col().find_one({"user_id": user_id})
+    if not user:
+        return "User not found."
+    
+    new_history = {"topic": topic, "score": score, "date": datetime.utcnow()}
+    users_col().update_one(
+        {"user_id": user_id},
+        {"$push": {"quiz_history": new_history}}
+    )
+    
+    update_op = {}
+    if score >= 75:
+        update_op["$addToSet"] = {"strong_topics": topic}
+        update_op["$pull"] = {"weak_topics": topic}
+    elif score <= 50:
+        update_op["$addToSet"] = {"weak_topics": topic}
+        update_op["$pull"] = {"strong_topics": topic}
+    else:
+        update_op["$pull"] = {"weak_topics": topic}
+
+    if update_op:
+        users_col().update_one({"user_id": user_id}, update_op)
+    
+    return f"Recorded {score}% in {topic}. Academic memory updated!"
 
 
 # ══════════════════════════════════════════════════════════════════════════════

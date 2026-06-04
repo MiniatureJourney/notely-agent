@@ -205,6 +205,18 @@ _TOOLS = Tool(function_declarations=[
             },
         },
     ),
+    FunctionDeclaration(
+        name="record_quiz_score",
+        description="Record the student's quiz score to update their Academic Memory (strong/weak topics). Call this when the student finishes a quiz.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "topic": {"type": "string", "description": "The topic of the quiz (e.g. Fourier Transform)"},
+                "score": {"type": "number", "description": "The percentage score (0 to 100)"},
+            },
+            "required": ["topic", "score"],
+        },
+    ),
 ])
 
 _SYSTEM_PROMPT = """You are NoteBot, an intelligent AI study assistant on Notely — \
@@ -224,7 +236,9 @@ Your behaviour:
 - Use the student's context (college, semester, department) as default filters
 - Format responses clearly — use bold for important terms
 - When a student says "summarise it" or "make flashcards" after a search,
-  use the note_id from the previous search result"""
+  use the note_id from the previous search result
+- ACT AS A PERSONAL ACADEMIC OS: If you see the student's Academic Memory, actively recommend reviewing weak topics (offer notes/flashcards) and praise them for strong topics!
+- ALWAYS evaluate quizzes when the student answers them, and call record_quiz_score to update their memory!"""
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -236,6 +250,7 @@ class ChatRequest(BaseModel):
     college:      str  = ""
     semester:     str  = ""
     department:   str  = ""
+    user_id:      str  = "anonymous"
     chat_history: list = []
 
 class NoteUpload(BaseModel):
@@ -304,11 +319,20 @@ async def health():
 @app.post("/chat")
 async def chat(req: ChatRequest):
     try:
+        academic_memory = ""
+        if req.user_id != "anonymous":
+            user = get_user_by_id(req.user_id)
+            if user:
+                weak = ", ".join(user.get("weak_topics", [])) or "None yet"
+                strong = ", ".join(user.get("strong_topics", [])) or "None yet"
+                academic_memory = f"\\nAcademic Memory for User:\\n- Weak Topics: {weak}\\n- Strong Topics: {strong}\\n(Use this to recommend targeted study sessions!)"
+
         system = (
-            f"{_SYSTEM_PROMPT}\n\n"
+            f"{_SYSTEM_PROMPT}\\n\\n"
             f"Student context — College: '{req.college}', "
             f"Semester: '{req.semester}', Department: '{req.department}'. "
             "Use as default filters when the student doesn't specify."
+            f"{academic_memory}"
         )
 
         # FIX #5: stable model name
@@ -347,7 +371,7 @@ async def chat(req: ChatRequest):
             tool_args = dict(fc_part.function_call.args)
 
             # FIX #10: dispatch via agent_tools.dispatch_tool()
-            tool_result = dispatch_tool(tool_name, tool_args)
+            tool_result = dispatch_tool(tool_name, tool_args, user_id=req.user_id)
 
             response = chat_session.send_message(
                 Part.from_function_response(

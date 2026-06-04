@@ -241,6 +241,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--ink);min-height:100v
 .psl{font-size:10px;color:var(--ink3);margin-top:1px}
 .pgrid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
 
+.p-topics{margin-top:10px;font-size:12px;background:var(--bg2);padding:10px;border-radius:var(--r8)}
 /* ── REQUESTS / FORUM ── */
 .req-list{display:flex;flex-direction:column;gap:11px}
 .req-card{background:#fff;border:1px solid var(--bdr);border-radius:var(--r18);padding:16px;display:flex;flex-direction:column;gap:8px;transition:box-shadow var(--t)}
@@ -502,6 +503,10 @@ body{font-family:var(--fb);background:var(--bg);color:var(--ink);min-height:100v
         <div class="pname" id="p-name">Loading...</div>
         <div class="pcol" id="p-col">—</div>
         <div class="pbdgs" id="p-badges"></div>
+        <div class="p-topics" id="p-memory">
+          <div style="margin-bottom:3px"><strong style="color:var(--grn)">💪 Strong Topics:</strong> <span id="p-strong">—</span></div>
+          <div><strong style="color:var(--red)">⚠️ Weak Topics:</strong> <span id="p-weak">—</span></div>
+        </div>
       </div>
       <div class="pstats">
         <div><div class="psv" id="p-pts">—</div><div class="psl">Points</div></div>
@@ -829,6 +834,7 @@ async function sendMsg(override){
         college:    document.getElementById('ctx-col')?.value||USER.college,
         semester:   document.getElementById('ctx-sem')?.value||String(USER.semester),
         department: document.getElementById('ctx-dept')?.value||USER.department,
+        user_id:    USER.user_id,
         chat_history: hist.slice(-12),
       }),
     });
@@ -963,6 +969,9 @@ async function loadProfile(){
     document.getElementById('p-c-pts').textContent=(u.points||0).toLocaleString()+' pts';
     const badges=u.badges||[];
     document.getElementById('p-badges').innerHTML=badges.length?badges.map(b=>`<span class="bdg bp">${b}</span>`).join(''):'<span style="color:var(--ink3);font-size:11px">Upload notes to earn badges!</span>';
+    const w = (u.weak_topics||[]).join(', '); const s = (u.strong_topics||[]).join(', ');
+    document.getElementById('p-weak').textContent = w ? w : 'None recorded yet';
+    document.getElementById('p-strong').textContent = s ? s : 'None recorded yet';
     document.getElementById('p-badge-list').innerHTML=badges.length
       ?badges.map(b=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr)"><span class="bdg bp">${b}</span></div>`).join('')
       :'<div style="font-size:12px;color:var(--ink3)">No badges yet. Upload and get upvotes!</div>';
