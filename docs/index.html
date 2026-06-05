@@ -618,6 +618,38 @@ body{
   </div>
 </div>
 
+<!-- ONBOARDING MODAL -->
+<div id="onboard-modal" style="display:none">
+  <div class="modal-bg" style="z-index:99999;backdrop-filter:blur(20px);background:rgba(11,13,20,0.85)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-ttl" style="margin-bottom:8px">Welcome to Notely! 👋</div>
+      <div style="color:var(--ink3);margin-bottom:24px;font-size:14px">Let's set up your student profile to customize your experience.</div>
+      <div class="fgrp">
+        <label class="flbl">Full Name <span class="req">*</span></label>
+        <input class="finp" id="ob-name" placeholder="e.g. Aditi Rao">
+      </div>
+      <div class="frow" style="margin-top:16px">
+        <div class="fgrp">
+          <label class="flbl">College <span class="req">*</span></label>
+          <input class="finp" id="ob-col" placeholder="e.g. VNIT Nagpur">
+        </div>
+        <div class="fgrp">
+          <label class="flbl">Semester <span class="req">*</span></label>
+          <select class="fselect" id="ob-sem">
+            <option value="1">Sem 1</option><option value="2">Sem 2</option><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5" selected>Sem 5</option><option value="6">Sem 6</option><option value="7">Sem 7</option><option value="8">Sem 8</option>
+          </select>
+        </div>
+      </div>
+      <div class="fgrp" style="margin-top:16px">
+        <label class="flbl">Department (Optional)</label>
+        <input class="finp" id="ob-dept" placeholder="e.g. Computer Science">
+      </div>
+      <button class="usubmit" style="margin-top:24px;width:100%" onclick="submitOnboard()">Start Learning</button>
+      <div id="ob-msg" style="margin-top:12px;font-size:13px;text-align:center;font-weight:500"></div>
+    </div>
+  </div>
+</div>
+
 <div id="toasts"></div>
 
 <script>
@@ -629,22 +661,71 @@ const API = (window.location.protocol === 'file:' || window.location.hostname ==
 
 /* ════════════════════════════════════════════════════
    USER SESSION
-   In a real app this would come from auth.
-   The user_id matches what seed_data.py inserted.
    ════════════════════════════════════════════════════ */
-const USER = {
-  user_id:    'student_001',
-  name:       'Rahul Sharma',
-  college:    'VNIT Nagpur',
-  department: 'Computer Science Engineering',
-  semester:   5,
+let USER = {
+  user_id:    'anonymous',
+  name:       'Student',
+  college:    '',
+  department: '',
+  semester:   1,
 };
 
-// Populate sidebar user info dynamically
-document.getElementById('sb-uname').textContent = USER.name;
-document.getElementById('sb-umeta').textContent = `${USER.college} · Sem ${USER.semester}`;
-document.getElementById('sb-ava').textContent   = USER.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-document.getElementById('home-uname').textContent = USER.name.split(' ')[0];
+function initUser() {
+  const saved = localStorage.getItem('notely_user');
+  if (saved) {
+    USER = JSON.parse(saved);
+    applyUserUI();
+    loadHome();
+  } else {
+    document.getElementById('onboard-modal').style.display = 'block';
+  }
+}
+
+function applyUserUI() {
+  document.getElementById('sb-uname').textContent = USER.name;
+  document.getElementById('sb-umeta').textContent = `${USER.college} · Sem ${USER.semester}`;
+  document.getElementById('sb-ava').textContent   = USER.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('home-uname').textContent = USER.name.split(' ')[0];
+}
+
+async function submitOnboard() {
+  const name = document.getElementById('ob-name').value.trim();
+  const college = document.getElementById('ob-col').value.trim();
+  const sem = parseInt(document.getElementById('ob-sem').value);
+  const dept = document.getElementById('ob-dept').value.trim();
+  const msgEl = document.getElementById('ob-msg');
+  
+  if(!name || !college) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Name and College are required.';
+    return;
+  }
+  
+  const uid = 'student_' + Date.now().toString(36);
+  USER = { user_id: uid, name: name, college: college, semester: sem, department: dept };
+  
+  msgEl.style.color = 'var(--ink3)';
+  msgEl.textContent = 'Saving profile...';
+  
+  try {
+    await api('/api/users', { method: 'POST', body: JSON.stringify(USER) });
+    localStorage.setItem('notely_user', JSON.stringify(USER));
+    document.getElementById('onboard-modal').style.display = 'none';
+    applyUserUI();
+    loadHome();
+    toast('Welcome to Notely, ' + name + '! 🎉');
+  } catch(e) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Could not sync profile to DB, but logging you in...';
+    setTimeout(() => {
+      localStorage.setItem('notely_user', JSON.stringify(USER));
+      document.getElementById('onboard-modal').style.display = 'none';
+      applyUserUI();
+      loadHome();
+      toast('Welcome locally, ' + name + '! (Sync failed)');
+    }, 1500);
+  }
+}
 
 /* ════════════════════════════════════════════════════
    NAVIGATION
@@ -1187,7 +1268,7 @@ function toast(msg,dur=3200){
    INIT
    ════════════════════════════════════════════════════ */
 checkHealth();
-loadHome();
+initUser();
 </script>
 </body>
 </html>
