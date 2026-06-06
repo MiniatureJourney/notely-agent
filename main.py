@@ -631,9 +631,9 @@ async def chat(req: ChatRequest):
             f"{academic_memory}"
         )
 
-        # Stable model — gemini-1.5-flash-002
+        # Stable model
         model = GenerativeModel(
-            "gemini-1.5-flash-002",
+            "gemini-2.5-flash",
             tools=[_TOOLS],
             system_instruction=system,
         )

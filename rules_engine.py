@@ -10,7 +10,7 @@ def evaluate_note_quality(text: str) -> dict:
     4. Exam Usefulness (25 points)
     """
     try:
-        model = GenerativeModel("gemini-1.5-flash-002")
+        model = GenerativeModel("gemini-2.5-flash")
         prompt = f"""You are an expert Academic Assessor. Evaluate this student note based on the following 4 rules:
 1. Completeness (0-25): Are core concepts defined?
 2. Clarity & Formatting (0-25): Is it easy to read with headings/bullets?
