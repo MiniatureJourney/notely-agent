@@ -29,7 +29,7 @@ from vertexai.generative_models import (
     Tool,
     FunctionDeclaration,
 )
-from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -112,6 +112,95 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 app.include_router(mcp_router)
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  MCP STREAMABLE HTTP TRANSPORT — Required by Google AI Studio Agent Builder
+#  Agent Builder expects a proper SSE/streamable endpoint, not just REST.
+#  This endpoint translates MCP JSON-RPC messages to our MongoDB MCP bridge.
+# ══════════════════════════════════════════════════════════════════════════════
+
+from fastapi.responses import StreamingResponse
+import json as _json_module
+
+@app.get("/mcp/health")
+async def mcp_health():
+    """Google Agent Builder probes this before connecting."""
+    from mcp_bridge import mcp_ctx
+    return {
+        "status": "ok",
+        "mcp_connected": mcp_ctx.session is not None,
+        "protocol": "MCP/1.0",
+        "transport": "streamable-http",
+        "service": "Notely MongoDB MCP Bridge",
+    }
+
+@app.post("/mcp")
+async def mcp_streamable_endpoint(request: Request):
+    """
+    Streamable HTTP MCP transport for Google AI Studio Agent Builder.
+    Accepts MCP JSON-RPC messages, routes them to the MongoDB MCP server,
+    and returns the response in MCP protocol format.
+    """
+    from mcp_bridge import mcp_ctx
+    try:
+        body = await request.json()
+    except Exception:
+        return {"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": None}
+
+    method  = body.get("method", "")
+    params  = body.get("params", {})
+    req_id  = body.get("id", 1)
+
+    # ── tools/list ────────────────────────────────────────────────────────────
+    if method == "tools/list":
+        if mcp_ctx.session:
+            try:
+                resp = await mcp_ctx.session.list_tools()
+                tools = [
+                    {"name": t.name, "description": t.description,
+                     "inputSchema": t.inputSchema}
+                    for t in resp.tools
+                ]
+                return {"jsonrpc": "2.0", "id": req_id,
+                        "result": {"tools": tools}}
+            except Exception as e:
+                return {"jsonrpc": "2.0", "id": req_id,
+                        "error": {"code": -32000, "message": str(e)}}
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": []}}
+
+    # ── tools/call ────────────────────────────────────────────────────────────
+    if method == "tools/call":
+        tool_name = params.get("name", "")
+        arguments  = params.get("arguments", {})
+        if mcp_ctx.session:
+            try:
+                result = await mcp_ctx.session.call_tool(tool_name, arguments=arguments)
+                content = [{"type": "text", "text": c.text}
+                           for c in result.content if c.type == "text"]
+                return {"jsonrpc": "2.0", "id": req_id,
+                        "result": {"content": content, "isError": result.isError}}
+            except Exception as e:
+                return {"jsonrpc": "2.0", "id": req_id,
+                        "error": {"code": -32000, "message": str(e)}}
+        return {"jsonrpc": "2.0", "id": req_id,
+                "error": {"code": -32001, "message": "MCP session not initialized"}}
+
+    # ── initialize (handshake) ────────────────────────────────────────────────
+    if method == "initialize":
+        return {
+            "jsonrpc": "2.0", "id": req_id,
+            "result": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {"tools": {}},
+                "serverInfo": {
+                    "name": "Notely MongoDB MCP Bridge",
+                    "version": "2.0.0"
+                }
+            }
+        }
+
+    return {"jsonrpc": "2.0", "id": req_id,
+            "error": {"code": -32601, "message": f"Method not found: {method}"}}
 
 @app.get("/api/platform-stats")
 async def api_platform_stats():
