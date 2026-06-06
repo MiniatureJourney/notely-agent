@@ -822,6 +822,17 @@ async def list_colleges():
         return {"success": False, "colleges": ["VNIT Nagpur", "IIT Bombay", "COEP Pune", "NIT Warangal", "IIT Delhi"]}
 
 
+@app.get("/api/departments")
+async def list_departments():
+    """Fetch distinct departments from the database for dynamic dropdowns."""
+    try:
+        departments = notes_col().distinct("department")
+        departments = sorted([d for d in departments if str(d).strip()])
+        return {"success": True, "departments": departments}
+    except Exception as e:
+        return {"success": False, "departments": ["Computer Science Engineering", "Mechanical Engineering", "Electronics Engineering", "Civil Engineering"]}
+
+
 @app.get("/api/notes")
 async def list_notes(
     college:    str = Query(""),

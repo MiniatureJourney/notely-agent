@@ -537,7 +537,7 @@ body{
         </div>
         <div class="frow">
           <div class="fgrp"><label class="flbl">Department <span class="req">*</span></label>
-            <select class="fselect" id="up-dept"><option>Computer Science Engineering</option><option>Mechanical Engineering</option><option>Electronics Engineering</option><option>Civil Engineering</option><option>Chemical Engineering</option><option>Electronics & Computer Science</option><option>Electrical Engineering</option></select>
+            <input class="finp" id="up-dept" placeholder="e.g. Computer Science" list="dynamic-dept-list">
           </div>
           <div class="fgrp"><label class="flbl">Semester <span class="req">*</span></label>
             <select class="fselect" id="up-sem"><option value="1">Sem 1</option><option value="2">Sem 2</option><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5">Sem 5</option><option value="6">Sem 6</option><option value="7">Sem 7</option><option value="8">Sem 8</option></select>
@@ -737,7 +737,7 @@ body{
     </div>
     <div class="fgrp" style="margin-top:16px">
       <label class="flbl" style="color:#e2e8f0">Department (Optional)</label>
-      <input class="finp" id="ob-dept" placeholder="e.g. Computer Science" style="background:rgba(0,0,0,0.3);border-color:rgba(255,255,255,0.1);color:#fff">
+      <input class="finp" id="ob-dept" placeholder="e.g. Computer Science" style="background:rgba(0,0,0,0.3);border-color:rgba(255,255,255,0.2);color:#fff" list="dynamic-dept-list">
     </div>
     <button class="usubmit" style="margin-top:32px;width:100%;height:52px;font-size:16px" onclick="submitOnboard()">Initialize Agentic OS →</button>
     <div id="ob-msg" style="margin-top:16px;font-size:13px;text-align:center;font-weight:500"></div>
@@ -972,9 +972,9 @@ async function loadHome(){
     document.getElementById('st-dl').textContent = notes.reduce((s,n)=>s+(n.downloads||0),0).toLocaleString();
   }catch{}
   try{
-    const lb = await api(`/api/leaderboard?college=${encodeURIComponent(USER.college)}&limit=50`);
+    const lb = await api(`/api/leaderboard?limit=100`);
     const rank = (lb.leaders||[]).findIndex(l=>l.user_id===USER.user_id);
-    document.getElementById('st-rank').textContent = rank>=0?`Rank #${rank+1} at ${USER.college}`:'Keep uploading!';
+    document.getElementById('st-rank').textContent = rank>=0?`Global Rank #${rank+1}`:'Keep uploading!';
   }catch{}
 }
 
@@ -1491,7 +1491,7 @@ async function loadProfile(){
     renderGrid('profile-grid',notes.slice(0,6));
   }catch{document.getElementById('profile-grid').innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📝</div><div class="empty-txt">No uploads yet</div><div class="empty-sub">Upload your first note!</div></div>';}
   try{
-    const lb=await api(`/api/leaderboard?college=${encodeURIComponent(USER.college)}&limit=50`);
+    const lb=await api(`/api/leaderboard?limit=100`);
     const rank=(lb.leaders||[]).findIndex(l=>l.user_id===USER.user_id);
     document.getElementById('p-rank').textContent=rank>=0?`#${rank+1}`:'#—';
   }catch{document.getElementById('p-rank').textContent='#—';}
@@ -1681,43 +1681,61 @@ async function loadPlatformStats() {
   }
 }
 
-async function loadColleges() {
+async function loadDynamicFilters() {
   try {
-    const data = await api('/api/colleges');
-    if (data.success && data.colleges && data.colleges.length > 0) {
+    const colData = await api('/api/colleges');
+    if (colData.success && colData.colleges && colData.colleges.length > 0) {
       const selectsWithAll = ['sc-col', 'lb-filter', 'req-filter', 'forum-filter'];
       selectsWithAll.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-          el.innerHTML = '<option value="">All Colleges</option>' + data.colleges.map(c => `<option value="${c}">${c}</option>`).join('');
+          el.innerHTML = '<option value="">All Colleges</option>' + colData.colleges.map(c => `<option value="${c}">${c}</option>`).join('');
         }
       });
       const ctxCol = document.getElementById('ctx-col');
       if (ctxCol) {
-        ctxCol.innerHTML = data.colleges.map(c => `<option value="${c}">${c}</option>`).join('');
+        ctxCol.innerHTML = colData.colleges.map(c => `<option value="${c}">${c}</option>`).join('');
       }
       
-      // Update datalist for inputs
       let dl = document.getElementById('dynamic-college-list');
       if (!dl) {
         dl = document.createElement('datalist');
         dl.id = 'dynamic-college-list';
         document.body.appendChild(dl);
       }
-      dl.innerHTML = data.colleges.map(c => `<option value="${c}">`).join('');
-      
-      // Re-apply user UI to ensure their current college is selected or added if new
-      if (USER.college) applyUserUI();
+      dl.innerHTML = colData.colleges.map(c => `<option value="${c}">`).join('');
     }
+
+    const deptData = await api('/api/departments');
+    if (deptData.success && deptData.departments && deptData.departments.length > 0) {
+      const scDept = document.getElementById('sc-dept');
+      if (scDept) {
+        scDept.innerHTML = '<option value="">All Departments</option>' + deptData.departments.map(d => `<option value="${d}">${d}</option>`).join('');
+      }
+      const ctxDept = document.getElementById('ctx-dept');
+      if (ctxDept) {
+        ctxDept.innerHTML = deptData.departments.map(d => `<option value="${d}">${d}</option>`).join('');
+      }
+      
+      let ddl = document.getElementById('dynamic-dept-list');
+      if (!ddl) {
+        ddl = document.createElement('datalist');
+        ddl.id = 'dynamic-dept-list';
+        document.body.appendChild(ddl);
+      }
+      ddl.innerHTML = deptData.departments.map(d => `<option value="${d}">`).join('');
+    }
+
+    if (USER.college) applyUserUI();
   } catch (e) {
-    console.error('Failed to load colleges', e);
+    console.error('Failed to load dynamic filters', e);
   }
 }
 
 checkHealth();
 initUser();
 loadPlatformStats();
-loadColleges();
+loadDynamicFilters();
 </script>
 </body>
 </html>
