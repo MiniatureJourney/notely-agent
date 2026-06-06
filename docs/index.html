@@ -501,7 +501,19 @@ body{
   </section>
 
   <!-- UPLOAD -->
-  <section class="page" id="page-upload">
+  <section class="page" id="page-upload" style="position:relative">
+    <!-- OCR Loading Overlay -->
+    <div id="ocr-overlay" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:100;border-radius:24px;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+      <div style="width:50px;height:50px;border-radius:50%;border:4px solid var(--bdr);border-top-color:var(--ac);animation:sp 1s linear infinite;margin-bottom:20px;"></div>
+      <div style="font-family:var(--fd);font-weight:700;font-size:18px;color:var(--ink1);margin-bottom:8px;">AI Processing...</div>
+      <div id="ocr-timer" style="font-size:14px;color:var(--ink3);font-family:var(--fb);font-weight:600;margin-bottom:24px;">00:00</div>
+      
+      <div style="background:var(--bg1);border:1px solid var(--bdr);border-radius:var(--r18);padding:16px 20px;max-width:320px;box-shadow:var(--sh-s);">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;color:var(--ink3);margin-bottom:8px;">💡 Did you know?</div>
+        <div id="ocr-trivia" style="font-size:13px;color:var(--ink2);line-height:1.5;transition:opacity 0.3s ease;">Active recall is 300% more effective than passive reading.</div>
+      </div>
+    </div>
+
     <div class="sec-hdr"><div><div class="sec-ttl">Upload a Note</div><div class="sec-sub">Share knowledge, earn points, help your community</div></div></div>
     <div class="ugrid">
       <div class="ucard">
@@ -1301,12 +1313,50 @@ function fallback(t){
 /* ════════════════════════════════════════════════════
    UPLOAD — calls real /upload-note with JSON body
    ════════════════════════════════════════════════════ */
+const OCR_TRIVIA = [
+  "Active recall is 300% more effective than passive reading.",
+  "Pro tip: You can ask NoteBot to generate an emergency 24-hour study plan!",
+  "Explaining a concept to a friend (or a rubber duck) helps solidify your own understanding.",
+  "Taking short breaks (Pomodoro technique) improves long-term retention.",
+  "Your uploaded notes are automatically quality-scored by Gemini AI!",
+  "NoteBot uses MongoDB Atlas Vector Search to find semantically similar concepts."
+];
+let ocrInterval = null;
+let triviaInterval = null;
+
 async function handleOCR(input) {
   const file = input.files[0];
   if(!file) return;
   const msgEl = document.getElementById('up-msg');
   msgEl.textContent = '📸 Extracting text and classifying using Google Gemini OCR...';
   msgEl.style.color = 'var(--ac)';
+  
+  // Show Overlay
+  const overlay = document.getElementById('ocr-overlay');
+  const timerEl = document.getElementById('ocr-timer');
+  const triviaEl = document.getElementById('ocr-trivia');
+  if(overlay) overlay.style.display = 'flex';
+  
+  let sec = 0;
+  if(timerEl) timerEl.textContent = '00:00';
+  ocrInterval = setInterval(() => {
+    sec++;
+    const m = String(Math.floor(sec/60)).padStart(2,'0');
+    const s = String(sec%60).padStart(2,'0');
+    if(timerEl) timerEl.textContent = `${m}:${s}`;
+  }, 1000);
+  
+  let tIdx = 0;
+  triviaInterval = setInterval(() => {
+    tIdx = (tIdx + 1) % OCR_TRIVIA.length;
+    if(triviaEl) {
+      triviaEl.style.opacity = '0';
+      setTimeout(() => {
+        triviaEl.textContent = OCR_TRIVIA[tIdx];
+        triviaEl.style.opacity = '1';
+      }, 300);
+    }
+  }, 4000);
   
   const formData = new FormData();
   formData.append('file', file);
@@ -1340,6 +1390,10 @@ async function handleOCR(input) {
     msgEl.textContent = '⚠️ OCR Failed: ' + e.message;
     msgEl.style.color = 'var(--red)';
     toast('OCR Failed. Please try again.');
+  } finally {
+    if(overlay) overlay.style.display = 'none';
+    clearInterval(ocrInterval);
+    clearInterval(triviaInterval);
   }
 }
 async function submitNote(){
