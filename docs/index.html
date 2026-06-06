@@ -1686,7 +1686,7 @@ async function loadPlatformStats() {
 async function loadDynamicFilters() {
   try {
     const colData = await api('/api/colleges');
-    if (colData.success && colData.colleges && colData.colleges.length > 0) {
+    if (colData.success && colData.colleges) {
       const selectsWithAll = ['sc-col', 'lb-filter', 'req-filter', 'forum-filter'];
       selectsWithAll.forEach(id => {
         const el = document.getElementById(id);
@@ -1709,7 +1709,7 @@ async function loadDynamicFilters() {
     }
 
     const deptData = await api('/api/departments');
-    if (deptData.success && deptData.departments && deptData.departments.length > 0) {
+    if (deptData.success && deptData.departments) {
       const scDept = document.getElementById('sc-dept');
       if (scDept) {
         scDept.innerHTML = '<option value="">All Departments</option>' + deptData.departments.map(d => `<option value="${d}">${d}</option>`).join('');
