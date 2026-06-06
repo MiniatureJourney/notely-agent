@@ -19,10 +19,18 @@ async def start_mcp():
     """Starts the official MongoDB MCP Server as a subprocess and bridges it."""
     mcp_ctx.exit_stack = AsyncExitStack()
     
-    # We use npx to dynamically pull and run the official MongoDB MCP server
+    # Use globally installed package (baked into Docker image) for zero cold-start.
+    # Falls back to npx for local development where npm install -g wasn't run.
+    import shutil
+    mcp_bin = shutil.which("mongodb-mcp-server")  # installed globally by npm install -g
+    if mcp_bin:
+        command, args = "node", [mcp_bin]
+    else:
+        command, args = "npx", ["-y", "@mongodb-js/mongodb-mcp-server"]
+
     server_params = StdioServerParameters(
-        command="npx",
-        args=["-y", "@mongodb-js/mongodb-mcp-server"],
+        command=command,
+        args=args,
         env={"MONGODB_URI": os.getenv("MONGODB_URI", ""), "PATH": os.environ.get("PATH", "")}
     )
     

@@ -88,6 +88,25 @@ def _is_zero_vector(v: list) -> bool:
     return not v or all(x == 0.0 for x in v)
 
 
+# ── PLATFORM STATS ────────────────────────────────────────────────────────────
+def get_platform_stats() -> dict:
+    """Fetch live counts for the animated platform stats ticker."""
+    try:
+        req_sample = requests_col().find_one()
+        if req_sample and "status" in req_sample:
+            req_count = requests_col().count_documents({"status": "open"})
+        else:
+            req_count = requests_col().estimated_document_count()
+
+        return {
+            "notes": notes_col().estimated_document_count(),
+            "users": users_col().estimated_document_count(),
+            "requests": req_count
+        }
+    except Exception:
+        # Fallback if DB is slow or unavailable
+        return {"notes": 0, "users": 0, "requests": 0}
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  NOTES
 # ══════════════════════════════════════════════════════════════════════════════
@@ -252,7 +271,7 @@ def get_trending_notes(college: str = "", limit: int = 10) -> list:
     if college:
         query["college"] = {"$regex": college, "$options": "i"}
     cursor = notes_col().find(query, {"embedding": 0}) \
-                        .sort("quality_score", DESCENDING) \
+                        .sort([("upvotes", DESCENDING), ("downloads", DESCENDING)]) \
                         .limit(limit)
     return _serial_list(list(cursor))
 
@@ -540,3 +559,81 @@ def upvote_forum_post(post_id: str) -> bool:
         return True
     except Exception:
         return False
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ACADEMIC MEMORY — called by agent_tools.py dispatch
+# ══════════════════════════════════════════════════════════════════════════════
+
+def update_academic_memory(user_id: str, topic: str, score: float) -> str:
+    """
+    Update the user's strong/weak topics based on quiz score.
+    Score >= 70 → strong topic. Score < 70 → weak topic.
+    Also writes to quiz_results_col for audit history.
+    """
+    if not user_id or user_id == "anonymous":
+        return "Memory not saved — anonymous session."
+    try:
+        is_strong = score >= 70
+        field = "strong_topics" if is_strong else "weak_topics"
+        opposite = "weak_topics" if is_strong else "strong_topics"
+
+        # Add to correct list, remove from opposite list
+        user_memory_col().update_one(
+            {"user_id": user_id},
+            {
+                "$addToSet": {field: topic},
+                "$pull":     {opposite: topic},
+                "$set":      {"last_studied": topic, "updated_at": datetime.utcnow()},
+            },
+            upsert=True,
+        )
+        # Persist quiz result for history
+        quiz_results_col().insert_one({
+            "user_id":    user_id,
+            "topic":      topic,
+            "score":      score,
+            "created_at": datetime.utcnow(),
+        })
+        label = "strong topic" if is_strong else "weak topic"
+        return f"Academic Memory updated! '{topic}' marked as a {label} ({score:.0f}%)."
+    except Exception as e:
+        return f"Memory update failed: {e}"
+
+
+def record_study_session(user_id: str, topic: str) -> str:
+    """Record that the student has studied a topic (updates last_studied)."""
+    if not user_id or user_id == "anonymous":
+        return "Session not saved — anonymous."
+    try:
+        user_memory_col().update_one(
+            {"user_id": user_id},
+            {
+                "$set":      {"last_studied": topic, "updated_at": datetime.utcnow()},
+                "$addToSet": {"study_history": topic},
+            },
+            upsert=True,
+        )
+        study_history_col().insert_one({
+            "user_id":    user_id,
+            "topic":      topic,
+            "created_at": datetime.utcnow(),
+        })
+        return f"Study session recorded: '{topic}'."
+    except Exception as e:
+        return f"Session record failed: {e}"
+
+
+def add_learning_pattern(user_id: str, pattern: str) -> str:
+    """Log an observed learning pattern for this user."""
+    if not user_id or user_id == "anonymous":
+        return "Pattern not saved — anonymous."
+    try:
+        learning_patterns_col().insert_one({
+            "user_id":    user_id,
+            "pattern":    pattern,
+            "created_at": datetime.utcnow(),
+        })
+        return f"Learning pattern logged: '{pattern}'."
+    except Exception as e:
+        return f"Pattern log failed: {e}"

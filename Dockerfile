@@ -16,6 +16,8 @@
 #    Run's log viewer shows logs with significant delay or misses them entirely.
 # 7. No PYTHONDONTWRITEBYTECODE — without it, Python writes .pyc files inside
 #    the container at runtime, wasting disk I/O on a read-mostly filesystem.
+# 8. MCP cold-start fix — pre-bake @mongodb-js/mongodb-mcp-server at build time
+#    so npx doesn't need to download it on first request (would timeout on Cloud Run).
 
 FROM python:3.11-slim
 
@@ -27,10 +29,22 @@ WORKDIR /app
 
 # FIX 3: copy requirements first so pip layer is cached across code-only changes
 COPY requirements.txt .
+
+# Install Node.js for the MongoDB MCP server (npx @mongodb-js/mongodb-mcp-server)
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# FIX 8: Pre-bake MongoDB MCP server so there is zero cold-start delay on Cloud Run.
+# This downloads the npm package into the npm cache during the Docker build layer,
+# so the first call to npx @mongodb-js/mongodb-mcp-server runs instantly.
+RUN npm install -g @mongodb-js/mongodb-mcp-server 2>/dev/null || true
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 # FIX 2: copy only the Python source files explicitly (no .env, no __pycache__, no seed_data)
-COPY main.py database.py embeddings.py agent_tools.py ./
+COPY main.py database.py embeddings.py agent_tools.py mcp_bridge.py rules_engine.py ./
 
 # FIX 1: copy the frontend into /app/static/ so main.py can serve it at "/"
 COPY docs/ ./static/

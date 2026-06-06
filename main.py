@@ -61,6 +61,8 @@ from database import (
     get_user_by_id,
     update_user_points,
     get_learning_patterns,
+    get_platform_stats,
+    get_user_memory,
 )
 from agent_tools import dispatch_tool
 from rules_engine import evaluate_note_quality
@@ -79,9 +81,46 @@ async def lifespan(app: FastAPI):
     yield
     await stop_mcp()
 
+from fastapi.openapi.utils import get_openapi
+
 # ── App ───────────────────────────────────────────────────────────────────────
-app = FastAPI(title="Notely API", version="2.0.0", lifespan=lifespan)
+app = FastAPI(
+    title="Notely Agentic OS",
+    description="Backend API for Notely, an AI-powered academic memory platform. Connects to Google AI Agent Builder for real-time tool execution, vector search, and student interactions.",
+    version="2.0.0",
+    lifespan=lifespan,
+    servers=[{"url": "https://notely-api.run.app", "description": "Google Cloud Run Production"}]
+)
+
+def custom_openapi():
+    """Generates an OpenAPI 3.0 schema strictly optimized for Google AI Agent Builder."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        openapi_version="3.0.3",
+        description=app.description,
+        routes=app.routes,
+        servers=app.servers,
+    )
+    # Agent builder needs a clear info block and strictly typed responses
+    openapi_schema["info"]["x-logo"] = {"url": "https://cdn-icons-png.flaticon.com/512/3143/3143641.png"}
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
+
 app.include_router(mcp_router)
+
+@app.get("/api/platform-stats")
+async def api_platform_stats():
+    """Fetch live counts of notes, users, and open requests."""
+    try:
+        stats = get_platform_stats()
+        return {"success": True, "stats": stats}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 app.add_middleware(
     CORSMiddleware,
@@ -331,6 +370,130 @@ class UserBody(BaseModel):
     department: str = ""
     semester:   int = 1
 
+class ExamModeRequest(BaseModel):
+    user_id:    str = "anonymous"
+    college:    str = ""
+    semester:   str = "5"
+    department: str = ""
+    subject:    str = ""   # optional fallback if no weak topics stored
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  EMERGENCY EXAM MODE
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/exam-mode")
+async def exam_mode(req: ExamModeRequest):
+    """
+    One-click Emergency Exam Mode.
+    1. Fetches the student's weak_topics from MongoDB user_memory.
+    2. For each weak topic (up to 4), searches for the best notes via MCP.
+    3. Passes all results to Gemini to produce a timed, prioritised study plan.
+    4. Returns the plan + a tool_calls log for the Activity Feed.
+    """
+    from agent_tools import tool_search_notes_mcp
+    from datetime import datetime as _dt
+
+    tool_calls_log = []
+
+    # Step 1 ── Pull weak topics from MongoDB
+    memory = get_user_memory(req.user_id)
+    weak_topics = memory.get("weak_topics", [])
+    strong_topics = memory.get("strong_topics", [])
+
+    # If no weak topics recorded yet, fall back to the subject hint or generic
+    if not weak_topics:
+        weak_topics = [req.subject] if req.subject else ["core exam topics"]
+        no_memory = True
+    else:
+        no_memory = False
+        weak_topics = weak_topics[:4]   # cap at 4 to avoid long wait
+
+    tool_calls_log.append({
+        "name":      "get_user_memory",
+        "args":      f"user_id={req.user_id}",
+        "timestamp": _dt.utcnow().strftime("%H:%M:%S"),
+        "via_mcp":   False,
+    })
+
+    # Step 2 ── Search best notes for each weak topic
+    note_blobs = []
+    for topic in weak_topics:
+        ts = _dt.utcnow().strftime("%H:%M:%S")
+        try:
+            result_str, via_mcp = await tool_search_notes_mcp(
+                query=topic,
+                college=req.college,
+                semester=req.semester,
+                department=req.department,
+            )
+        except Exception:
+            result_str, via_mcp = f"No notes found for {topic}.", False
+
+        tool_calls_log.append({
+            "name":      "search_notes",
+            "args":      f"query={topic[:35]}, college={req.college[:20]}",
+            "timestamp": ts,
+            "via_mcp":   via_mcp,
+        })
+        note_blobs.append(f"### Topic: {topic}\n{result_str}")
+
+    # Step 3 ── Ask Gemini to synthesise a timed study plan
+    try:
+        from vertexai.generative_models import GenerativeModel as _GM, Part as _Part
+        planner = _GM(
+            "gemini-1.5-flash",
+            system_instruction=(
+                "You are an emergency exam coach for an Indian college student. "
+                "Given their weak topics and the notes available in their platform, "
+                "produce a STRICT, timed 24-hour study plan formatted EXACTLY as:\n"
+                "## 🚨 24-Hour Emergency Exam Plan\n"
+                "**Strong Topics (skip or skim):** <comma list>\n"
+                "**Weak Topics (focus):** <comma list>\n\n"
+                "| Time Slot | Topic | Action | Notes Available |\n"
+                "|-----------|-------|--------|-----------------|\n"
+                "| 06:00–07:30 | ... | ... | ... |\n"
+                "... (cover 24 hrs with realistic slots including breaks)\n\n"
+                "**Final 2-hr Blitz:** bullet list of the single most important concept per weak topic.\n"
+                "Keep it punchy, motivating, and achievable. Max 600 words."
+            ),
+        )
+        prompt = (
+            f"Student: {req.college}, Semester {req.semester}, {req.department}\n"
+            f"Strong topics (already knows): {', '.join(strong_topics) or 'none recorded'}\n"
+            f"Weak topics (needs focus): {', '.join(weak_topics)}\n"
+            f"No prior memory: {no_memory}\n\n"
+            "Available notes found for each weak topic:\n"
+            + "\n\n".join(note_blobs)
+        )
+        response = planner.generate_content(prompt)
+        plan_text = response.text
+
+        tool_calls_log.append({
+            "name":      "generate_exam_plan",
+            "args":      f"topics={len(weak_topics)}, notes_blobs={len(note_blobs)}",
+            "timestamp": _dt.utcnow().strftime("%H:%M:%S"),
+            "via_mcp":   False,
+        })
+
+    except Exception as e:
+        plan_text = (
+            f"## 🚨 Emergency Exam Plan\n"
+            f"**Focus on these weak topics:** {', '.join(weak_topics)}\n\n"
+            "Could not generate a full AI plan right now. "
+            "Study each weak topic for 2 hours using the notes found above, "
+            "then do 30-minute revision. Good luck! 💪"
+        )
+
+    return {
+        "success":     True,
+        "plan":        plan_text,
+        "weak_topics": weak_topics,
+        "strong_topics": strong_topics,
+        "no_memory":   no_memory,
+        "tool_calls":  tool_calls_log,
+    }
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  HEALTH
@@ -350,7 +513,7 @@ async def health():
 #  CHAT — AGENTIC LOOP
 # ══════════════════════════════════════════════════════════════════════════════
 
-@app.post("/chat")
+@app.post("/api/chat")
 async def chat(req: ChatRequest):
     try:
         academic_memory = ""
@@ -363,19 +526,25 @@ async def chat(req: ChatRequest):
                 patterns = get_learning_patterns(req.user_id)
                 pattern_str = "\\n- Patterns: " + ", ".join(patterns) if patterns else ""
                 
-                academic_memory = f"\\nAcademic Memory for User:\\n- Weak Topics: {weak}\\n- Strong Topics: {strong}\\n- Last Studied: {last}{pattern_str}\\n(Use this to recommend targeted study sessions and adapt to their patterns!)"
+                academic_memory = (
+                    f"\nAcademic Memory for User:\n"
+                    f"- Weak Topics: {weak}\n"
+                    f"- Strong Topics: {strong}\n"
+                    f"- Last Studied: {last}{pattern_str}\n"
+                    f"(Use this to recommend targeted study sessions and adapt to their patterns!)"
+                )
 
         system = (
-            f"{_SYSTEM_PROMPT}\\n\\n"
+            f"{_SYSTEM_PROMPT}\n\n"
             f"Student context — College: '{req.college}', "
             f"Semester: '{req.semester}', Department: '{req.department}'. "
             "Use as default filters when the student doesn't specify."
             f"{academic_memory}"
         )
 
-        # FIX #5: stable model name
+        # Stable model — gemini-1.5-flash available in all GCP projects without preview access
         model = GenerativeModel(
-            "gemini-2.5-flash",
+            "gemini-1.5-flash",
             tools=[_TOOLS],
             system_instruction=system,
         )
@@ -393,6 +562,10 @@ async def chat(req: ChatRequest):
         chat_session = model.start_chat(history=history_contents)
         response     = chat_session.send_message(req.message)
 
+        # Collect tool calls for the MCP Activity Feed visible in the frontend
+        from datetime import datetime as _dt
+        tool_calls_log = []
+
         # FIX #2: safe agentic loop — don't assume parts[0] is always a function_call
         for _ in range(8):
             # Check ALL parts for a function call
@@ -408,8 +581,22 @@ async def chat(req: ChatRequest):
             tool_name = fc_part.function_call.name
             tool_args = dict(fc_part.function_call.args)
 
-            # FIX #10: dispatch via agent_tools.dispatch_tool()
-            tool_result = dispatch_tool(tool_name, tool_args, user_id=req.user_id)
+            # Log this tool call for the Activity Feed
+            arg_summary = ", ".join(
+                f"{k}={str(v)[:40]}" for k, v in tool_args.items() if v
+            ) or "no params"
+
+            # dispatch_tool is now async and returns (result_str, via_mcp: bool)
+            tool_result, via_mcp = await dispatch_tool(
+                tool_name, tool_args, user_id=req.user_id
+            )
+
+            tool_calls_log.append({
+                "name":      tool_name,
+                "args":      arg_summary,
+                "timestamp": _dt.utcnow().strftime("%H:%M:%S"),
+                "via_mcp":   via_mcp,
+            })
 
             response = chat_session.send_message(
                 Part.from_function_response(
@@ -418,7 +605,7 @@ async def chat(req: ChatRequest):
                 )
             )
 
-        return {"response": response.text, "success": True}
+        return {"response": response.text, "success": True, "tool_calls": tool_calls_log}
 
     except Exception as e:
         print(f"[/chat] error: {e}")
@@ -429,7 +616,7 @@ async def chat(req: ChatRequest):
 #  NOTES
 # ══════════════════════════════════════════════════════════════════════════════
 
-@app.post("/upload-note")
+@app.post("/api/upload-note")
 async def upload_note(note: NoteUpload):
     """
     FIX #1: accepts JSON body via Pydantic model instead of query params.
@@ -543,6 +730,8 @@ async def list_notes(
     """Browse / filter notes — used by the frontend home and search grids."""
     if sort == "recent":
         notes = get_recent_notes(college=college, limit=limit)
+    elif sort == "trending":
+        notes = get_trending_notes(college=college, limit=limit)
     else:
         notes = get_all_notes(
             college=college, department=department,
