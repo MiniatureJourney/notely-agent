@@ -631,9 +631,9 @@ async def chat(req: ChatRequest):
             f"{academic_memory}"
         )
 
-        # Stable model — gemini-1.5-flash available in all GCP projects without preview access
+        # Stable model — gemini-1.5-flash-002
         model = GenerativeModel(
-            "gemini-1.5-flash",
+            "gemini-1.5-flash-002",
             tools=[_TOOLS],
             system_instruction=system,
         )
