@@ -451,8 +451,8 @@ body{
         <div class="panel">
           <div class="ptitle">Study Context</div>
           <div class="cfield"><div class="clbl">College</div><select class="csel" id="ctx-col"><option>VNIT Nagpur</option><option>COEP Pune</option><option>IIT Bombay</option><option>NIT Warangal</option><option>IIT Delhi</option></select></div>
-          <div class="cfield"><div class="clbl">Semester</div><select class="csel" id="ctx-sem"><option value="3">Semester 3</option><option value="4">Semester 4</option><option value="5" selected>Semester 5</option><option value="6">Semester 6</option></select></div>
-          <div class="cfield"><div class="clbl">Department</div><select class="csel" id="ctx-dept"><option>Computer Science Engineering</option><option>Mechanical Engineering</option><option>Electronics Engineering</option><option>Civil Engineering</option></select></div>
+          <div class="cfield"><div class="clbl">Semester</div><select class="csel" id="ctx-sem"><option value="1">Semester 1</option><option value="2">Semester 2</option><option value="3">Semester 3</option><option value="4">Semester 4</option><option value="5" selected>Semester 5</option><option value="6">Semester 6</option><option value="7">Semester 7</option><option value="8">Semester 8</option></select></div>
+          <div class="cfield"><div class="clbl">Department</div><select class="csel" id="ctx-dept"><option>Computer Science Engineering</option><option>Mechanical Engineering</option><option>Electronics Engineering</option><option>Civil Engineering</option><option>Electronics & Computer Science</option><option>Electrical Engineering</option></select></div>
         </div>
         <div class="panel">
           <div class="ptitle">Quick Actions</div>
@@ -491,8 +491,8 @@ body{
     <div class="fbar">
       <input class="fsel" type="text" id="sq" placeholder="Search topic or keyword..." style="width:190px" onkeydown="if(event.key==='Enter')runSearch()">
       <select class="fsel" id="sc-col" onchange="runSearch()"><option value="">All Colleges</option><option>VNIT Nagpur</option><option>COEP Pune</option><option>IIT Bombay</option><option>NIT Warangal</option></select>
-      <select class="fsel" id="sc-dept" onchange="runSearch()"><option value="">All Departments</option><option>Computer Science Engineering</option><option>Mechanical Engineering</option><option>Electronics Engineering</option></select>
-      <select class="fsel" id="sc-sem" onchange="runSearch()"><option value="0">All Semesters</option><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5">Sem 5</option><option value="6">Sem 6</option></select>
+      <select class="fsel" id="sc-dept" onchange="runSearch()"><option value="">All Departments</option><option>Computer Science Engineering</option><option>Mechanical Engineering</option><option>Electronics Engineering</option><option>Civil Engineering</option><option>Electronics & Computer Science</option><option>Electrical Engineering</option></select>
+      <select class="fsel" id="sc-sem" onchange="runSearch()"><option value="0">All Semesters</option><option value="1">Sem 1</option><option value="2">Sem 2</option><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5">Sem 5</option><option value="6">Sem 6</option><option value="7">Sem 7</option><option value="8">Sem 8</option></select>
       <select class="fsel" id="sc-sort" onchange="runSearch()"><option value="quality">Quality Score</option><option value="recent">Newest First</option></select>
       <button class="bts" onclick="runSearch()" style="height:30px;padding:0 14px">🔍 Search</button>
     </div>
@@ -537,7 +537,7 @@ body{
         </div>
         <div class="frow">
           <div class="fgrp"><label class="flbl">Department <span class="req">*</span></label>
-            <select class="fselect" id="up-dept"><option>Computer Science Engineering</option><option>Mechanical Engineering</option><option>Electronics Engineering</option><option>Civil Engineering</option><option>Chemical Engineering</option></select>
+            <select class="fselect" id="up-dept"><option>Computer Science Engineering</option><option>Mechanical Engineering</option><option>Electronics Engineering</option><option>Civil Engineering</option><option>Chemical Engineering</option><option>Electronics & Computer Science</option><option>Electrical Engineering</option></select>
           </div>
           <div class="fgrp"><label class="flbl">Semester <span class="req">*</span></label>
             <select class="fselect" id="up-sem"><option value="1">Sem 1</option><option value="2">Sem 2</option><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5">Sem 5</option><option value="6">Sem 6</option><option value="7">Sem 7</option><option value="8">Sem 8</option></select>

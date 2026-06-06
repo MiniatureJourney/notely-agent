@@ -231,7 +231,9 @@ def vector_search_notes(query_embedding: list, filters: dict = None,
 
     try:
         results = list(notes_col().aggregate(pipeline))
-        return _serial_list(results)
+        # Filter out irrelevant notes that vector search naturally includes
+        filtered_results = [r for r in results if r.get("score", 0) > 0.65]
+        return _serial_list(filtered_results)
     except PyMongoError as e:
         print(f"[vector_search] error: {e}")
         return []

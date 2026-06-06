@@ -531,7 +531,7 @@ async def exam_mode(req: ExamModeRequest):
     try:
         from vertexai.generative_models import GenerativeModel as _GM, Part as _Part
         planner = _GM(
-            "gemini-1.5-flash",
+            "gemini-2.5-flash",
             system_instruction=(
                 "You are an emergency exam coach for an Indian college student. "
                 "Given their weak topics and the notes available in their platform, "
