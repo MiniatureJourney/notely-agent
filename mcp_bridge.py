@@ -44,6 +44,16 @@ async def start_mcp():
         
         session = await mcp_ctx.exit_stack.enter_async_context(ClientSession(read, write))
         await session.initialize()
+        
+        # Explicitly connect to the database to prevent intermittent offline errors
+        mongo_uri = os.getenv("MONGODB_URI", "")
+        if mongo_uri:
+            try:
+                await session.call_tool("connect", arguments={"connectionStringOrClusterName": mongo_uri})
+                print("[MCP Bridge] Explicitly connected to MongoDB Atlas via 'connect' tool.")
+            except Exception as conn_err:
+                print(f"[MCP Bridge] Failed to run 'connect' tool: {conn_err}")
+
         mcp_ctx.session = session
         print("[MCP Bridge] Successfully connected to official MongoDB MCP Server!")
     except Exception as e:
