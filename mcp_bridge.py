@@ -31,7 +31,11 @@ async def start_mcp():
     server_params = StdioServerParameters(
         command=command,
         args=args,
-        env={"MONGODB_URI": os.getenv("MONGODB_URI", ""), "PATH": os.environ.get("PATH", "")}
+        env={
+            "MONGODB_URI": os.getenv("MONGODB_URI", ""),
+            "MDB_MCP_CONNECTION_STRING": os.getenv("MONGODB_URI", ""),
+            "PATH": os.environ.get("PATH", "")
+        }
     )
     
     try:
