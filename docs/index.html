@@ -434,10 +434,10 @@ body{
         </div>
         <div class="chat-inp">
           <div class="qrow">
-            <button class="qc" onclick="sendQ('Summarize my most recent uploaded note')">Summarize Note</button>
-            <button class="qc" onclick="sendQ('Create 10 flashcards from my notes')">Create 10 Flashcards</button>
-            <button class="qc" onclick="sendQ('Create a practice quiz from my notes')">Practice Quiz</button>
-            <button class="qc" onclick="sendQ('Generate a 10-question test on my recent topics')">Generate Test</button>
+            <button class="qc" onclick="sendQ('Summarize all the notes which are present in this chat')">Summarize Notes</button>
+            <button class="qc" onclick="sendQ('Create 10 flashcards from the notes in this chat')">Create Flashcards</button>
+            <button class="qc" onclick="sendQ('Create practice tests from all my notes in this chat')">Practice Test</button>
+            <button class="qc" onclick="sendQ('Generate a test from all my note topics in this chat')">Generate Test</button>
           </div>
           <div class="irow">
             <textarea class="cta" id="chat-in" placeholder="Ask NoteBot anything about your syllabus..." rows="1" onkeydown="handleKey(event)" oninput="autoRes(this)"></textarea>
