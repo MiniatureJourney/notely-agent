@@ -760,16 +760,35 @@ Respond ONLY in valid JSON format exactly like this:
   "title": "e.g. Fourier Transforms Overview"
 }'''
         
+        from vertexai.generative_models import GenerationConfig
+        
         response = model.generate_content([
             Part.from_data(data=file_bytes, mime_type=file.content_type),
             prompt
-        ])
+        ], generation_config=GenerationConfig(response_mime_type="application/json"))
         
         text = response.text.strip()
         if text.startswith("```json"): text = text[7:-3]
         elif text.startswith("```"): text = text[3:-3]
         
-        parsed = json.loads(text.strip())
+        # Robustly escape invalid unescaped backslashes (e.g. \u without 4 hex digits, \sigma)
+        import re
+        text = re.sub(r'\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', r'\\\\', text)
+        
+        try:
+            parsed = json.loads(text.strip())
+        except Exception as e:
+            print(f"OCR JSON Parse Error: {e}")
+            title_match = re.search(r'"title"\s*:\s*"([^"]+)"', text)
+            content_match = re.search(r'"content"\s*:\s*"((?:[^"]|\\")*)"', text)
+            subject_match = re.search(r'"subject"\s*:\s*"([^"]+)"', text)
+            parsed = {
+                "title": title_match.group(1) if title_match else "Untitled OCR Note",
+                "content": content_match.group(1).replace('\\\\', '\\').replace('\\"', '"') if content_match else text[:2000],
+                "subject": subject_match.group(1) if subject_match else "Unknown",
+                "chapter": "Unknown",
+                "semester": 1
+            }
         
         note_dict = {
             "title": parsed.get("title", "Untitled OCR Note"),
