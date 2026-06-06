@@ -532,7 +532,7 @@ body{
           <div class="fgrp"><label class="flbl">Chapter</label><input class="finp" id="up-chap" placeholder="e.g. Laws of Thermodynamics"></div>
         </div>
         <div class="frow">
-          <div class="fgrp"><label class="flbl">College <span class="req">*</span></label><input class="finp" id="up-col" placeholder="VNIT Nagpur"></div>
+          <div class="fgrp"><label class="flbl">College <span class="req">*</span></label><input class="finp" id="up-col" placeholder="VNIT Nagpur" list="dynamic-college-list"></div>
           <div class="fgrp"><label class="flbl">Teacher</label><input class="finp" id="up-teach" placeholder="Dr. R. Sharma"></div>
         </div>
         <div class="frow">
@@ -668,9 +668,9 @@ body{
       <div class="fgrp"><label class="flbl">What do you need? <span class="req">*</span></label><input class="finp" id="rm-title" placeholder="e.g. DBMS Normalization with examples"></div>
       <div class="frow" style="margin-top:12px">
         <div class="fgrp"><label class="flbl">Subject <span class="req">*</span></label><input class="finp" id="rm-sub" placeholder="e.g. DBMS"></div>
-        <div class="fgrp"><label class="flbl">Semester</label><select class="fselect" id="rm-sem"><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5">Sem 5</option><option value="6">Sem 6</option></select></div>
+        <div class="fgrp"><label class="flbl">Semester</label><select class="fselect" id="rm-sem"><option value="1">Sem 1</option><option value="2">Sem 2</option><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5">Sem 5</option><option value="6">Sem 6</option><option value="7">Sem 7</option><option value="8">Sem 8</option></select></div>
       </div>
-      <div class="fgrp" style="margin-top:12px"><label class="flbl">College <span class="req">*</span></label><input class="finp" id="rm-col" placeholder="VNIT Nagpur"></div>
+      <div class="fgrp" style="margin-top:12px"><label class="flbl">College <span class="req">*</span></label><input class="finp" id="rm-col" placeholder="VNIT Nagpur" list="dynamic-college-list"></div>
       <div class="fgrp" style="margin-top:12px"><label class="flbl">Priority</label><select class="fselect" id="rm-pri"><option value="high">🔴 High</option><option value="medium" selected>🟡 Medium</option><option value="low">🟢 Low</option></select></div>
       <button class="usubmit" style="margin-top:16px" onclick="submitReq()">Post Request</button>
       <div id="rm-msg" style="margin-top:8px;font-size:12px;text-align:center"></div>
@@ -1579,6 +1579,8 @@ async function submitReq(){
   const col=document.getElementById('rm-col').value.trim();
   const msgEl=document.getElementById('rm-msg');
   if(!title||!sub||!col){toast('Fill in all required fields');return;}
+  if(msgEl.textContent === 'Posting...') return;
+  msgEl.style.color='var(--ink3)';msgEl.textContent='Posting...';
   try{
     await api('/api/requests',{method:'POST',body:JSON.stringify({title,subject:sub,college:col,semester:parseInt(document.getElementById('rm-sem').value),priority:document.getElementById('rm-pri').value,posted_by:USER.user_id})});
     msgEl.style.color='var(--grn)';msgEl.textContent='✅ Request posted!';
@@ -1679,9 +1681,43 @@ async function loadPlatformStats() {
   }
 }
 
+async function loadColleges() {
+  try {
+    const data = await api('/api/colleges');
+    if (data.success && data.colleges && data.colleges.length > 0) {
+      const selectsWithAll = ['sc-col', 'lb-filter', 'req-filter', 'forum-filter'];
+      selectsWithAll.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.innerHTML = '<option value="">All Colleges</option>' + data.colleges.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+      });
+      const ctxCol = document.getElementById('ctx-col');
+      if (ctxCol) {
+        ctxCol.innerHTML = data.colleges.map(c => `<option value="${c}">${c}</option>`).join('');
+      }
+      
+      // Update datalist for inputs
+      let dl = document.getElementById('dynamic-college-list');
+      if (!dl) {
+        dl = document.createElement('datalist');
+        dl.id = 'dynamic-college-list';
+        document.body.appendChild(dl);
+      }
+      dl.innerHTML = data.colleges.map(c => `<option value="${c}">`).join('');
+      
+      // Re-apply user UI to ensure their current college is selected or added if new
+      if (USER.college) applyUserUI();
+    }
+  } catch (e) {
+    console.error('Failed to load colleges', e);
+  }
+}
+
 checkHealth();
 initUser();
 loadPlatformStats();
+loadColleges();
 </script>
 </body>
 </html>

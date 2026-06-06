@@ -808,6 +808,20 @@ Respond ONLY in valid JSON format exactly like this:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+from database import notes_col
+
+@app.get("/api/colleges")
+async def list_colleges():
+    """Fetch distinct colleges from the database for dynamic dropdowns."""
+    try:
+        colleges = notes_col().distinct("college")
+        # Filter out empty strings and sort alphabetically
+        colleges = sorted([c for c in colleges if str(c).strip()])
+        return {"success": True, "colleges": colleges}
+    except Exception as e:
+        return {"success": False, "colleges": ["VNIT Nagpur", "IIT Bombay", "COEP Pune", "NIT Warangal", "IIT Delhi"]}
+
+
 @app.get("/api/notes")
 async def list_notes(
     college:    str = Query(""),
