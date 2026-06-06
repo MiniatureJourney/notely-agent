@@ -1034,7 +1034,9 @@ function openNote(id,title){
 
 function studyAI(id,title){
   showPage('notebot');
-  setTimeout(()=>sendMsg(`Generate 10 flashcards from the note "${title}" (note ID: ${id})`),200);
+  const shortMsg = `Load note: "${title}"`;
+  const prompt = `Load the note "${title}" (Note ID: ${id}). Reply EXACTLY with this text and nothing else (do not add any conversational filler):\n\nNote loaded successfully!\n\n**${title}**\n(Note ID: ${id})\n\nI've found and loaded this note into the chat context. You can now ask me to:\n\n• Generate flashcards\n• Create practice quizzes\n• Summarize the note\n• Explain concepts in simple terms\n• Answer questions based on the note\n• Extract important exam topics\n• Generate viva questions\n• Create revision notes\n\nJust ask anything about this note, and I'll use its content to help you study.`;
+  setTimeout(()=>sendMsg(shortMsg, prompt), 200);
 }
 
 async function doUpvote(id,btn){
@@ -1057,13 +1059,13 @@ function autoRes(el){el.style.height='auto';el.style.height=Math.min(el.scrollHe
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
 function sendQ(txt){showPage('notebot');setTimeout(()=>sendMsg(txt),120);}
 
-async function sendMsg(override){
+async function sendMsg(override, hiddenPrompt){
   const inp=document.getElementById('chat-in');
   const txt=override||inp.value.trim();
   if(!txt||busy)return;
   if(!override){inp.value='';inp.style.height='38px';}
   addMsg('u',txt);
-  hist.push({role:'user',content:txt});
+  hist.push({role:'user',content:(hiddenPrompt || txt)});
   busy=true;
   document.getElementById('sbtn').disabled=true;
   showTyping();
@@ -1078,7 +1080,7 @@ async function sendMsg(override){
     const data=await api('/api/chat',{
       method:'POST',
       body:JSON.stringify({
-        message:    txt,
+        message:    (hiddenPrompt || txt),
         college:    document.getElementById('ctx-col')?.value||USER.college,
         semester:   document.getElementById('ctx-sem')?.value||String(USER.semester),
         department: document.getElementById('ctx-dept')?.value||USER.department,
