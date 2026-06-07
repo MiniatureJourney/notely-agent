@@ -127,11 +127,11 @@ def get_all_notes(college: str = "", department: str = "",
     """Fetch notes with optional filters, sorted by quality score. FIX 7."""
     query = {}
     # FIX 2: only filter when value is non-empty
-    if college:    query["college"]    = {"$regex": college,    "$options": "i"}
-    if department: query["department"] = {"$regex": department, "$options": "i"}
+    if college:    query["college"]    = college
+    if department: query["department"] = department
     if semester:   query["semester"]   = semester
 
-    cursor = notes_col().find(query, {"embedding": 0}) \
+    cursor = notes_col().find(query, {"embedding": 0, "full_content": 0}) \
                         .sort("quality_score", DESCENDING) \
                         .limit(limit)
     return _serial_list(list(cursor))
@@ -141,8 +141,8 @@ def get_recent_notes(college: str = "", limit: int = 20) -> list:
     """Fetch notes sorted by creation date. FIX 7."""
     query = {}
     if college:
-        query["college"] = {"$regex": college, "$options": "i"}
-    cursor = notes_col().find(query, {"embedding": 0}) \
+        query["college"] = college
+    cursor = notes_col().find(query, {"embedding": 0, "full_content": 0}) \
                         .sort("created_at", DESCENDING) \
                         .limit(limit)
     return _serial_list(list(cursor))
@@ -253,8 +253,8 @@ def search_notes_text(query: str, college: str = "", department: str = "",
                 {"teacher":         {"$regex": query, "$options": "i"}},
             ]
         })
-    if college:    conditions.append({"college":    {"$regex": college,    "$options": "i"}})
-    if department: conditions.append({"department": {"$regex": department, "$options": "i"}})
+    if college:    conditions.append({"college":    college})
+    if department: conditions.append({"department": department})
     if semester:   conditions.append({"semester": semester})
 
     q = {"$and": conditions} if conditions else {}
@@ -271,8 +271,8 @@ def get_trending_notes(college: str = "", limit: int = 10) -> list:
     """
     query = {}
     if college:
-        query["college"] = {"$regex": college, "$options": "i"}
-    cursor = notes_col().find(query, {"embedding": 0}) \
+        query["college"] = college
+    cursor = notes_col().find(query, {"embedding": 0, "full_content": 0}) \
                         .sort([("upvotes", DESCENDING), ("downloads", DESCENDING)]) \
                         .limit(limit)
     return _serial_list(list(cursor))
@@ -384,7 +384,7 @@ def get_leaderboard(college: str = "", limit: int = 10) -> list:
     """
     query = {}
     if college:
-        query["college"] = {"$regex": college, "$options": "i"}
+        query["college"] = college
     cursor = users_col().find(
         query,
         {"_id": 0, "user_id": 1, "name": 1, "college": 1,
@@ -508,7 +508,7 @@ def get_requests(college: str = "", limit: int = 20) -> list:
     """FIX 7: was missing. FIX 2: empty-string guard."""
     query = {}
     if college:
-        query["college"] = {"$regex": college, "$options": "i"}
+        query["college"] = college
     cursor = requests_col().find(query) \
                            .sort("created_at", DESCENDING) \
                            .limit(limit)
@@ -544,7 +544,7 @@ def get_forum_posts(college: str = "", limit: int = 20) -> list:
     """FIX 7: was missing. FIX 2: empty-string guard."""
     query = {}
     if college:
-        query["college"] = {"$regex": college, "$options": "i"}
+        query["college"] = college
     cursor = forum_col().find(query) \
                         .sort("created_at", DESCENDING) \
                         .limit(limit)
