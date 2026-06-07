@@ -883,7 +883,7 @@ document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click'
    API HELPER
    ════════════════════════════════════════════════════ */
 async function api(path,opts={}){
-  const r = await fetch(API+path,{headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(60000),...opts});
+  const r = await fetch(API+path,{headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(15000),...opts});
   if(!r.ok) throw new Error(`API ${r.status} ${path}`);
   return r.json();
 }
@@ -959,18 +959,34 @@ async function loadHome(){
   if(homeFilter === 'trending') sort = 'trending';
   const col = homeFilter==='college'?USER.college:'';
 
-  // Fire all requests concurrently and handle independently (NO blocking Promise.all!)
-  api(`/api/notes?sort=${sort}&college=${encodeURIComponent(col)}&limit=12`).then(data => {
-    if(data){
-      renderGrid('home-grid', data.notes||[]);
-      document.getElementById('st-total').textContent  = (data.count||0).toLocaleString();
-      document.getElementById('st-total-d').textContent= `${data.count||0} total notes`;
-      document.getElementById('nb-count').textContent  = data.count||'—';
-    }
-  }).catch(() => {
-    document.getElementById('home-grid').innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⚠️</div><div class="empty-txt">Could not load notes</div><div class="empty-sub">Check connection</div></div>';
-  });
+  // Notes feed: fetch with one automatic retry to handle Cloud Run cold starts
+  const fetchNotes = (isRetry) => {
+    const notesUrl = `/api/notes?sort=${sort}&college=${encodeURIComponent(col)}&limit=12`;
+    api(notesUrl).then(data => {
+      if(data){
+        renderGrid('home-grid', data.notes||[]);
+        document.getElementById('st-total').textContent  = (data.count||0).toLocaleString();
+        document.getElementById('st-total-d').textContent= `${data.count||0} total notes`;
+        document.getElementById('nb-count').textContent  = data.count||'—';
+      }
+    }).catch(() => {
+      if(!isRetry){
+        // Server is cold starting — show friendly message and retry after 4 seconds
+        document.getElementById('home-grid').innerHTML = `
+          <div class="empty" style="grid-column:1/-1">
+            <div class="empty-icon">⏳</div>
+            <div class="empty-txt">Waking up the server...</div>
+            <div class="empty-sub">This takes ~5s on first load. Retrying automatically.</div>
+          </div>`;
+        setTimeout(() => fetchNotes(true), 4000);
+      } else {
+        document.getElementById('home-grid').innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⚠️</div><div class="empty-txt">Could not load notes</div><div class="empty-sub">Check connection and refresh</div></div>';
+      }
+    });
+  };
+  fetchNotes(false);
 
+  // Stats: fire independently, failures are silent
   api(`/api/users/${USER.user_id}`).then(u => {
     if(u) document.getElementById('st-pts').textContent = (u.points||0).toLocaleString();
   }).catch(()=>{});
