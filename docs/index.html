@@ -1685,8 +1685,21 @@ async function loadForum(){
 }
 
 async function upvoteForum(id,btn){
-  try{await api(`/api/forum/${id}/upvote`,{method:'POST'});btn.classList.add('v');toast('▲ Upvoted!');}
-  catch{toast('Could not upvote.');}
+  if(btn.classList.contains('v'))return;
+  
+  btn.classList.add('v');
+  const sp = btn.querySelector('span');
+  const currentCount = parseInt(sp.textContent) || 0;
+  sp.textContent = currentCount + 1;
+
+  try{
+    await api(`/api/forum/${id}/upvote`,{method:'POST'});
+    toast('▲ Upvoted!');
+  }catch{
+    btn.classList.remove('v');
+    sp.textContent = currentCount;
+    toast('Could not upvote.');
+  }
 }
 
 function showForumModal(){document.getElementById('forum-modal').style.display='block';}
