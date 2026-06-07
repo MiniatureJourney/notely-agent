@@ -277,7 +277,7 @@ Every note (both manual and OCR) is scored by Gemini against 4 academic criteria
 
 ---
 
-## ⚡ Performance Optimizations (Added in This Session)
+## ⚡ Performance Optimizations 
 
 ### Database (MongoDB Atlas)
 - **Compound Index** on `notes(college, department, semester)` — queries drop from 50ms → 2ms
