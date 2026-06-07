@@ -836,6 +836,12 @@ async function submitOnboard() {
   msgEl.style.color = 'var(--ink3)';
   msgEl.textContent = 'Saving profile...';
   
+  // Optimistic Zero-State for New Users
+  document.getElementById('st-pts').textContent = '0';
+  document.getElementById('st-uploads').textContent = '0';
+  document.getElementById('st-dl').textContent = '0';
+  document.getElementById('st-rank').textContent = 'Keep uploading!';
+  
   try {
     await api('/api/users', { method: 'POST', body: JSON.stringify(USER) });
     localStorage.setItem('notely_user', JSON.stringify(USER));
