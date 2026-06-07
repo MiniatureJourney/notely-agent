@@ -959,37 +959,36 @@ async function loadHome(){
   if(homeFilter === 'trending') sort = 'trending';
   const col = homeFilter==='college'?USER.college:'';
 
-  // Fire all requests concurrently
-  const pNotes = api(`/api/notes?sort=${sort}&college=${encodeURIComponent(col)}&limit=12`).catch(() => null);
-  const pUser  = api(`/api/users/${USER.user_id}`).catch(() => null);
-  const pStats = api(`/api/user/${USER.user_id}/notes`).catch(() => null);
-  const pLb    = api(`/api/leaderboard?limit=100`).catch(() => null);
-
-  const [data, u, un, lb] = await Promise.all([pNotes, pUser, pStats, pLb]);
-
-  if(data){
-    renderGrid('home-grid', data.notes||[]);
-    document.getElementById('st-total').textContent  = (data.count||0).toLocaleString();
-    document.getElementById('st-total-d').textContent= `${data.count||0} total notes`;
-    document.getElementById('nb-count').textContent  = data.count||'—';
-  } else {
+  // Fire all requests concurrently and handle independently (NO blocking Promise.all!)
+  api(`/api/notes?sort=${sort}&college=${encodeURIComponent(col)}&limit=12`).then(data => {
+    if(data){
+      renderGrid('home-grid', data.notes||[]);
+      document.getElementById('st-total').textContent  = (data.count||0).toLocaleString();
+      document.getElementById('st-total-d').textContent= `${data.count||0} total notes`;
+      document.getElementById('nb-count').textContent  = data.count||'—';
+    }
+  }).catch(() => {
     document.getElementById('home-grid').innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⚠️</div><div class="empty-txt">Could not load notes</div><div class="empty-sub">Check connection</div></div>';
-  }
+  });
 
-  if(u) {
-    document.getElementById('st-pts').textContent = (u.points||0).toLocaleString();
-  }
-  
-  if(un) {
-    const notes = un.notes||[];
-    document.getElementById('st-uploads').textContent = notes.length;
-    document.getElementById('st-dl').textContent = notes.reduce((s,n)=>s+(n.downloads||0),0).toLocaleString();
-  }
+  api(`/api/users/${USER.user_id}`).then(u => {
+    if(u) document.getElementById('st-pts').textContent = (u.points||0).toLocaleString();
+  }).catch(()=>{});
 
-  if(lb) {
-    const rank = (lb.leaders||[]).findIndex(l=>l.user_id===USER.user_id);
-    document.getElementById('st-rank').textContent = rank>=0?`Global Rank #${rank+1}`:'Keep uploading!';
-  }
+  api(`/api/user/${USER.user_id}/notes`).then(un => {
+    if(un){
+      const notes = un.notes||[];
+      document.getElementById('st-uploads').textContent = notes.length;
+      document.getElementById('st-dl').textContent = notes.reduce((s,n)=>s+(n.downloads||0),0).toLocaleString();
+    }
+  }).catch(()=>{});
+
+  api(`/api/leaderboard?limit=100`).then(lb => {
+    if(lb){
+      const rank = (lb.leaders||[]).findIndex(l=>l.user_id===USER.user_id);
+      document.getElementById('st-rank').textContent = rank>=0?`Global Rank #${rank+1}`:'Keep uploading!';
+    }
+  }).catch(()=>{});
 }
 
 // Home filter chips
