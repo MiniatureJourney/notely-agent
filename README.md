@@ -5,7 +5,7 @@
 **The intelligent study companion for Indian college students.**
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Google_Cloud_Run-4285F4?style=for-the-badge)](https://notely-287509159734.us-central1.run.app)
-[![Full Technical Walkthrough](https://img.shields.io/badge/Full_Technical_Walkthrough-YouTube-FF0000?style=for-the-badge)](https://youtu.be/J0GMxIIXiWc)
+[![Full Technical Walkthrough](https://img.shields.io/badge/Full_Technical_Walkthrough-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/J0GMxIIXiWc)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](LICENSE)
 [![MongoDB Atlas](https://img.shields.io/badge/MongoDB-Atlas_Vector_Search-00ED64?style=for-the-badge&logo=mongodb&logoColor=white)](https://mongodb.com/atlas)
 [![Vertex AI](https://img.shields.io/badge/Google-Vertex_AI_Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://cloud.google.com/vertex-ai)
