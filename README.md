@@ -39,6 +39,14 @@ No login required — create a quick profile and start exploring.
 
 ---
 
+---
+
+## 🎥 Full Technical Walkthrough
+
+**→ [https://youtu.be/J0GMxIIXiWc](https://youtu.be/J0GMxIIXiWc)**
+
+---
+
 ## 🏗️ Architecture
 
 ```
