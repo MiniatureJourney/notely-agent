@@ -45,7 +45,7 @@ def run_tests():
             "full_content": "This is a rigorous test note covering completeness, examples, clarity, and exam usefulness. Here is a solved example: 1+1=2.",
             "uploaded_by": TEST_USER
         }
-        resp = client.post("/upload-note", json=note_payload)
+        resp = client.post("/api/upload-note", json=note_payload)
         assert resp.status_code == 200
         data = resp.json()
         note_id = data["note_id"]
@@ -86,7 +86,7 @@ def run_tests():
             "user_id": TEST_USER,
             "chat_history": []
         }
-        resp = client.post("/chat", json=chat_payload)
+        resp = client.post("/api/chat", json=chat_payload)
         assert resp.status_code == 200
         chat_reply = resp.json().get("response", "")
         print(f"  [OK] Gemini responded intelligently:\n  \"{chat_reply[:150]}...\"")
