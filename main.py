@@ -794,7 +794,7 @@ Respond ONLY in valid JSON format exactly like this:
             "title": parsed.get("title", "Untitled OCR Note"),
             "subject": parsed.get("subject", "Unknown Subject"),
             "chapter": parsed.get("chapter", "Unknown Chapter"),
-            "semester": int(parsed.get("semester", 1)),
+            "semester": int(parsed.get("semester") or 1),
             "college": college,
             "department": department,
             "uploaded_by": uploaded_by,
