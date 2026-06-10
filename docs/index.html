@@ -131,6 +131,7 @@ body{
 .qbdg{font-size:12px;font-weight:700;padding:4px 10px;border-radius:24px}
 .qh{background:var(--grnd);color:var(--grn)}
 .qm{background:var(--gldd);color:var(--gld)}
+.ql{background:var(--redd);color:var(--red)}
 .bts{height:32px;padding:0 14px;background:var(--ac);color:#fff;border:none;border-radius:var(--r8);font-size:13px;font-weight:600;cursor:pointer;transition:all var(--t);font-family:var(--fb)}
 .bts:hover{background:var(--ach)}
 
@@ -989,7 +990,7 @@ async function checkHealth(){
 function noteCard(n){
   const id    = n._id || n.id || '';
   const qs    = n.quality_score !== undefined ? Number(n.quality_score).toFixed(0) : 50;
-  const qc    = qs >= 80 ? 'qh' : (qs >= 50 ? 'qm' : '');
+  const qc    = qs >= 80 ? 'qh' : (qs >= 60 ? 'qm' : 'ql');
   const ql    = `⭐ Score: ${qs}/100`;
   const prev  = n.content_preview || n.preview || 'No preview available.';
   const teach = n.teacher || 'Unknown';
