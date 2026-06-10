@@ -700,6 +700,28 @@ body{
 </div>
 
 <!-- ONBOARDING MODAL -->
+    <!-- NOTE PREVIEW + COMMENTS MODAL -->
+    <div id="note-modal" style="display:none">
+      <div class="modal-bg" onclick="closeMods()">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width:720px; width:95%">
+          <button class="modal-close" onclick="closeMods()">✕</button>
+          <div class="modal-ttl" id="note-ttl">Note Preview</div>
+          <div id="note-ctn" style="margin-top:12px;max-height:240px;overflow:auto;color:var(--ink3)">Loading...</div>
+
+          <div style="margin-top:14px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:14px">Comments</div>
+            <div style="font-size:12px;color:var(--ink3)">Be respectful — no spam</div>
+          </div>
+          <div id="comments-list" style="margin-top:10px;max-height:240px;overflow:auto"></div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+            <textarea id="comment-input" placeholder="Write a comment..." style="flex:1;min-height:44px;padding:10px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg3);color:var(--ink3)"></textarea>
+            <button class="usubmit" style="height:44px;padding:0 18px" onclick="postComment()">Post</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 <div id="onboard-modal" style="display:none; position:fixed; inset:0; z-index:99999; background:linear-gradient(-45deg, #0f172a, #022c22, #0f172a, #1e3a8a); background-size:400% 400%; animation: gradPulse 10s ease infinite; flex-direction:column; align-items:center; justify-content:center;">
   <style>
     @keyframes gradPulse { 0% {background-position:0% 50%} 50% {background-position:100% 50%} 100% {background-position:0% 50%} }
@@ -982,6 +1004,7 @@ function noteCard(n){
         <button class="uvbtn" onclick="event.stopPropagation();doUpvote('${id}',this)">▲ <span>${n.upvotes||0}</span></button>
         <span class="qbdg ${qc}">${ql}</span>
         <button class="bts" onclick="event.stopPropagation();studyAI('${id}','${(n.title||'').replace(/'/g,"\\'")}')">Study with AI</button>
+        <button class="bts" style="margin-left:8px" onclick="event.stopPropagation();showNoteModal('${id}','${(n.title||'').replace(/'/g,"\\'")}')">💬 Comments</button>
       </div>
     </div>`;
 }
@@ -1109,6 +1132,90 @@ function openNote(id,title){
   if(!id)return;
   showPage('notebot');
   setTimeout(()=>sendMsg(`Summarize the note titled "${title}" (note ID: ${id}) and list the key concepts I need to know`),200);
+}
+
+let CURRENT_NOTE_ID = null;
+
+async function showNoteModal(id,title){
+  try{
+    CURRENT_NOTE_ID = id;
+    // populate title
+    const ttl = document.getElementById('note-ttl');
+    const ctn = document.getElementById('note-ctn');
+    ttl.textContent = title || 'Note';
+    ctn.innerHTML = '<div class="skel" style="height:120px;border-radius:8px"></div>';
+
+    // fetch note content if available
+    try{
+      const note = await api(`/api/notes/${id}`);
+      if(note && note.full_content){
+        ctn.textContent = note.full_content;
+      } else if(note && note.title){
+        ctn.textContent = note.title;
+      } else {
+        ctn.textContent = 'Note preview not available.';
+      }
+    }catch(e){
+      ctn.textContent = 'Could not load note content.';
+    }
+
+    document.getElementById('note-modal').style.display = 'flex';
+    // load comments
+    await loadComments(id);
+  }catch(e){
+    console.error('showNoteModal',e);
+    toast('Could not open note preview');
+  }
+}
+
+async function loadComments(note_id){
+  const list = document.getElementById('comments-list');
+  list.innerHTML = '<div class="skel" style="height:80px;border-radius:8px"></div>';
+  try{
+    const data = await api(`/api/notes/${note_id}/comments`);
+    const comments = (data && data.comments) ? data.comments : [];
+    renderComments(comments);
+  }catch(e){
+    list.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-txt">Could not load comments</div></div>';
+  }
+}
+
+function renderComments(comments){
+  const list = document.getElementById('comments-list');
+  if(!comments || comments.length===0){
+    list.innerHTML = '<div class="empty"><div class="empty-icon">💬</div><div class="empty-txt">No comments yet</div><div class="empty-sub">Be the first to comment!</div></div>';
+    return;
+  }
+  list.innerHTML = comments.map(c=>{
+    const when = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+    const name = c.user_name || 'Anonymous';
+    const content = (c.content||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `
+      <div style="padding:10px;border-radius:8px;border:1px solid var(--bdr);margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--grn));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">${(name.split(' ').map(w=>w[0]).join('').substring(0,2)||'A').toUpperCase()}</div>
+          <div style="font-weight:700;color:var(--ink)">${name}</div>
+          <div style="margin-left:auto;font-size:12px;color:var(--ink3)">${when}</div>
+        </div>
+        <div style="color:var(--ink3);font-size:14px;line-height:1.4">${content}</div>
+      </div>`;
+  }).join('');
+}
+
+async function postComment(){
+  const inp = document.getElementById('comment-input');
+  const txt = inp.value.trim();
+  if(!txt){toast('Comment cannot be empty');return;}
+  if(!CURRENT_NOTE_ID){toast('No note selected');return;}
+  try{
+    await api('/api/comments',{method:'POST',body:JSON.stringify({note_id:CURRENT_NOTE_ID,user_id:USER.user_id,user_name:USER.name,content:txt})});
+    inp.value='';
+    await loadComments(CURRENT_NOTE_ID);
+    toast('💬 Comment posted');
+  }catch(e){
+    console.error('postComment',e);
+    toast('Failed to post comment');
+  }
 }
 
 function studyAI(id,title){
@@ -1785,7 +1892,11 @@ async function submitForum(){
   }catch{msgEl.style.color='var(--red)';msgEl.textContent='Failed to post.';}
 }
 
-function closeMods(){document.getElementById('req-modal').style.display='none';document.getElementById('forum-modal').style.display='none';}
+function closeMods(){
+  const elReq = document.getElementById('req-modal'); if(elReq) elReq.style.display='none';
+  const elFor = document.getElementById('forum-modal'); if(elFor) elFor.style.display='none';
+  const elNote = document.getElementById('note-modal'); if(elNote) elNote.style.display='none';
+}
 
 /* ════════════════════════════════════════════════════
    TOAST
