@@ -1008,11 +1008,13 @@ function noteCard(n){
         <span>📅 Sem ${n.semester||'?'}</span>
         <span>👨‍🏫 ${teach}</span>
       </div>
-      <div class="nfoot">
-        <button class="uvbtn" onclick="event.stopPropagation();doUpvote('${id}',this)">▲ <span>${n.upvotes||0}</span></button>
-        <span class="qbdg ${qc}">${ql}</span>
-        <button class="bts" onclick="event.stopPropagation();studyAI('${id}','${(n.title||'').replace(/'/g,"\\'")}')">Study with AI</button>
-        <button class="bts" style="margin-left:8px" onclick="event.stopPropagation();showNoteModal('${id}','${(n.title||'').replace(/'/g,"\\'")}')">💬 Comments</button>
+      <div class="nfoot" style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="uvbtn" onclick="event.stopPropagation();doUpvote('${id}',this)">▲ <span>${n.upvotes||0}</span></button>
+          <span class="qbdg ${qc}">${ql}</span>
+          <span style="margin-left:auto;cursor:pointer;font-size:13px;color:var(--ink3);display:flex;align-items:center;gap:4px" onclick="event.stopPropagation();showNoteModal('${id}','${(n.title||'').replace(/'/g,"\\'")}')">💬 <span style="font-weight:600">${n.comment_count||n.replies||0}</span></span>
+        </div>
+        <button class="bts" style="width:100%" onclick="event.stopPropagation();studyAI('${id}','${(n.title||'').replace(/'/g,"\\'")}')">Study with AI</button>
       </div>
     </div>`;
 }
